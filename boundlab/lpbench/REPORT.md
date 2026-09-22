@@ -296,12 +296,113 @@ e.g. `j4+pairs` decomposes as `bound = |R| · |T⋈V|` mediated by six Shannon
 inequalities. This is a machine-checkable proof sequence in the PANDA
 style, emitted for free by the solver.
 
-### 5.5 Cost
+### 5.5 Real-world benchmarks (the actual LpBound evaluation suite)
+
+Same datasets/workloads as the LpBound paper: **JOB** on IMDB
+(JOB-light 70 queries, JOB-join 31, JOB-range), **STATS** (146 queries,
+Stack-Overflow dump), **DBLP** dense 8-vertex subgraph patterns.
+Truth = `COUNT(*)` of the original SQL in DuckDB over the *same* parsed
+rows the statistics see.  `q-err = bound/truth ≥ 1`; a value `< 1` is a
+soundness violation.
+
+**JOB-light (70 queries, 4–8 tables, predicates):**
+
+| arm | geomean | median | p90 | max | exact | viol |
+|---|---|---|---|---|---|---|
+| LpBound | 16.14 | 10.12 | 98.0 | 6089 | 0% | 0 |
+| +pairs | **4.97** | **3.89** | **32.7** | 467 | 6% | 0 |
+
++pairs is strictly tighter on **100%** of the 70 queries; LB coverage
+100%, 0 violations.
+
+**JOB-join (31 queries, up to 14 tables / 23 LP attributes, no
+predicates):** 29/31 evaluated (1 genuine empty result, 1 DuckDB truth
+timeout).
+
+| arm | geomean | median | p90 | max | viol |
+|---|---|---|---|---|---|
+| LpBound | 10.07 | 4.64 | 123.6 | 4654 | 0 |
+| +pairs | **5.05** | **3.46** | **60.0** | 539 | 0 |
+
+Strictly tighter on 93%.  Highlights: `jobjoin.11` 117→6.6,
+`jobjoin.21` 467→54, `jobjoin.27` 4654→540, `jobjoin.31` 107→22.
+Simple star/chain queries collapse to q-err ≈ 1.0 (pair count = truth).
+The n≥13 queries all run through the reduced LP; on `jobjoin.9` it
+reproduces the full-LP optimum bit-for-bit.
+
+**STATS (146 queries, Stack-Overflow, heavy predicates):**
+
+| arm | geomean | median | p90 | max | exact | viol |
+|---|---|---|---|---|---|---|
+| LpBound | 175.3 | 108.4 | 14370 | 4.7e8 | 1% | 0 |
+| +pairs | 88.5 | 44.8 | 8710 | 3.1e8 | 8% | 0 |
+| +triples | **8.28** | **4.91** | **255** | 1995 | **34%** | 0 |
+
+Strictly tighter on 97% (pairs) and 90% (triples over pairs).  The
+triples arm is the headline result here: exact 3-atom join counts
+collapse the remaining gap by another **10.7× geomean** over pairs —
+e.g. `stats.13` 108→35→**1.00**, `stats.14` 6170→2240→**1.00**,
+`stats.116` 9224→4002→**22.8**.  The 4-atom star joins that dominate
+STATS' tail are exactly the transitive-correlation regime pairs cannot
+see; a 3-way exact marginal covers the whole connected skeleton.
+
+Two soundness bugs were caught *by* the regression rather than assumed
+away: `stats.114-121` were silently under-bounded before the join-key
+encoding fix (per-table packing broke cross-table equality), and
+`stats.142` exposed a merge-order bug in the triple counter — an atom
+reachable only through a *later* atom in combination order was skipped,
+under-counting the join and producing an invalid (too-small)
+constraint.  Both fixed and re-verified `bound ≥ truth` on all 145
+evaluated queries (1 truth timeout).  LB emits on 100%, 0 violations.
+
+**DBLP dense subgraphs (8-vertex patterns):** pair statistics tie the
+baseline — bound-only protocol (TQ=0, 30 dense patterns):
+`pairs/lpbound` bound-ratio geomean = **1.000, 100% ties**.  Expected
+negative control: after label propagation each edge atom is tiny
+(~9K rows), single-atom degree sequences already dominate pair counts;
+DuckDB also times out on most dense patterns, so the ratio is reported
+on bounds alone.  This is §6's predicted no-win regime.
+
+### 5.6 Engineering: what it took to be correct *and* scalable
+
+Real data surfaced four bugs a synthetic-only evaluation would miss:
+
+- **SQL `COUNT(*)` semantics**: entropy variables must range over
+  *physical rows*, not key projections — each atom carries a private
+  row-id attribute (without it bounds under-count by the duplicate-key
+  product).
+- **NULL semantics**: `NULL` never joins `NULL`; naive pandas/factorized
+  encodings treat `NaN == NaN`.  NULLs get per-(table,column) salted
+  unique sentinels; a `to_numpy` view-mutation bug silently rewrote
+  source columns before the fix.
+- **Join-key packing must be a pure function of the values**: an early
+  `encode()` used per-table radix bases/min-shifts — identical tuples
+  packed differently across tables, producing *invalid* (too-small)
+  pair statistics and under-bounds on STATS.  Fixed-base packing (with
+  an arbitrary-precision fallback) restored soundness; regression now
+  asserts `bound ≥ truth` on every query.
+- **LP size**: `n` attributes ⇒ `2^n` entropy vars; JOB-join reaches
+  `n = 23` (8.4 M).  A *reduced* LP keeps only valid inequalities —
+  atom-local statistics, an atom-ordering submodularity ladder, and
+  pair/triple-ladder constraints so marginals still propagate —
+  soundness is preserved (fewer constraints ⇒ looser, never violated).
+- **k-way join counts need a connectivity-ordered merge**: merging
+  atoms in combination order can skip an atom whose only join partner
+  comes later — the result is a *smaller* count, hence an *invalid*
+  constraint (`stats.142` regression).  Atoms are BFS-ordered before
+  merging; row-ids are folded into tuple weights so a star triple
+  costs O(#keys), not O(|join|).
+- **Object columns with NULLs**: a mixed `object` array (`'S3524'`,
+  `NaN`) raises `TypeError` on elementwise `<`; predicates evaluate
+  through a NULL-aware comparator (SQL: any comparison on NULL is
+  false).
+
+### 5.7 Cost
 
 - Storage: one scalar per connected atom subset (`O(m²)` pairs; `O(m)`
   for chains — selection under a budget is future work).
-- LP overhead: ~0.2–5 s per query at 3M edges, dominated by `np.unique`
-  on base columns; the LP itself is ms (≤ 32 variables, ~10³ rows).
+- Runtime: JOB-light ≈ 9 s/query median (dominated by degree-sequence
+  scans on the 33 M-row `cast_info`); the reduced LP itself is ms–s.
 - No bound ever regresses (constraints are monotone); every reported
   bound verified `≥ truth`, every LB `≤ truth`.
 
@@ -354,19 +455,26 @@ Done in this round:
    PANDA-style proof sequence; verified consistent by strong duality on
    every query (e.g. `bound = |R|·|T⋈V|` + 6 Shannon steps on j4).
 
+4. ~~**Real workload**~~ — the full LpBound evaluation suite is
+   implemented (§5.5): JOB-light/JOB-join/JOB-range on IMDB, STATS on the
+   Stack-Overflow dump, DBLP dense patterns.  Truth is DuckDB `COUNT(*)`
+   over the identical parsed rows; every emitted bound is checked
+   `≥ truth`, every LB `≤ truth`.
+
 Still open:
 
-4. **Selection**: which pair/triple stats to materialize under a storage
+5. **Selection**: which pair/triple stats to materialize under a storage
    budget — knapsack over LP dual values; ideal LLM-agent task.
-5. **Conditional marginals**: pair counts conditioned on a third atom's
+6. **Conditional marginals**: pair counts conditioned on a third atom's
    key group (the 207× residual on `j3-anticorr` is transitive
    correlation that pairs cannot see).
-6. **Lower-bound coverage**: no template for 4-chains yet — need
+7. **Lower-bound coverage**: no template for 4-chains yet — need
    overlapping-spine or separator-tree decompositions.
-7. **Real workload**: JOB/STATS via Postgres-extracted degree sequences;
-   end-to-end plan quality (the paper's bar: plans ≥ true-cardinality
-   plans).
-8. **LLM loop**: candidate-statistic generation → support-argument
+8. **End-to-end plan quality**: the paper's headline claim is that
+   pessimistic bounds produce plans ≥ true-cardinality plans; wiring our
+   bounds into an optimizer (Postgres hook / Lero-style comparator) is
+   the remaining evaluation step.
+9. **LLM loop**: candidate-statistic generation → support-argument
    soundness check + adversarial counterexample search → LP integration;
    this prototype is the manual run of that loop.
 
@@ -376,9 +484,14 @@ Still open:
 
 ```
 boundlab/lpbench/
-  engine.py   — LP construction, all statistics, solver, exact truth
+  engine.py   — LP construction (full + reduced), all statistics,
+                solver, exact truth, lower bounds, certificates
   data.py     — synthetic generators + cit-Patents loader
   run.py      — benchmark driver (synth / j3 / graph)
+  sql.py      — flat-SQL parser, NULL-correct predicate evaluation
+  dbload.py   — CSV/IMDB/STATS/DBLP loaders, NULL-safe key encoding
+  bench.py    — real-workload driver (DuckDB truth + arms + watchdog)
+  results/    — per-workload CSVs
   REPORT.md   — this file
 ```
 
@@ -386,7 +499,10 @@ Reproduce:
 
 ```bash
 cd boundlab/lpbench
-python run.py synth   # synthetic table
-python run.py j3      # 3-chain
-python run.py graph   # cit-Patents, directed + undirected
+python run.py synth                       # synthetic table
+python run.py j3                          # 3-chain
+python run.py graph                       # cit-Patents, directed + undirected
+python bench.py joblight                  # JOB-light, IMDB (arms via ARMS=)
+ARMS=lpbound,pairs,triples python bench.py stats
+STARTQ=330 MAXQ=10 python bench.py jobrange   # partial reruns
 ```

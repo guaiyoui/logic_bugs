@@ -3,3 +3,6 @@ __pycache__/
 *.egg-info/
 .ipynb_checkpoints/
 .DS_Store
+*.log
+data_dl/
+boundlab/lpbench/imdb_schema.json
