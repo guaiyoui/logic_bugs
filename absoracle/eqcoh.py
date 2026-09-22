@@ -582,16 +582,28 @@ def probe_setops(runner, dialect, tables, rng, diffs, stats, ex=False):
     rE, eE = runner.run(f"{A} EXCEPT ALL {B}")
     rI, eI = runner.run(f"{A} INTERSECT ALL {B}")
     if not (eA or eE or eI):
-        ty = [tt]
-        if cbag(rE, ty) + cbag(rI, ty) != cbag(rA, ty):
-            _diff(diffs, "setop", "mset_partition", a=rA[:8],
+        styp = next(c.typ for c in s.cols if c.name == ks)
+        if tt == styp:
+            key = lambda v: canon(v, tt)
+        else:
+            # cross-type setop coerces to a common type (e.g. numeric ->
+            # float in normalize()); compare both sides in that domain
+            key = lambda v: canon(float(v) if v is not None else None,
+                                  "num")
+        lhs = Counter(key(r[0]) for r in rE) + \
+            Counter(key(r[0]) for r in rI)
+        rhs = Counter(key(r[0]) for r in rA)
+        if lhs != rhs:
+            _diff(diffs, "setop", "mset_partition",
+                  q=f"{A} EXCEPT|INTERSECT {B}", a=rA[:8],
                   ex=rE[:8], inter=rI[:8])
             ok = False
         elif (bag(rE) + bag(rI) != bag(rA)
               and tt == next(c.typ for c in s.cols if c.name == ks)):
             # rep-level diff only meaningful when operand types match —
             # cross-type setops must coerce (int -> numeric), which is legal
-            _diff(diffs, "setop", "mset_rep", a=rA[:8],
+            _diff(diffs, "setop", "mset_rep",
+                  q=f"{A} EXCEPT|INTERSECT {B}", a=rA[:8],
                   ex=rE[:8], inter=rI[:8])
             ok = False
     rX, eX = runner.run(f"{A} EXCEPT {A}")
@@ -743,20 +755,40 @@ def probe_algo(runner, dialect, tables, rng, diffs, stats, ex=False):
     k = rng.choice(fams[fam])
     q = f"SELECT {k}, COUNT(*) FROM {t.name} GROUP BY {k}"
     qtypes = [next(c.typ for c in t.cols if c.name == k), "int"]
+    is_join = False
     if len(tables) > 1 and rng.random() < 0.5:
         s = rng.choice([x for x in tables if x is not t])
         fs = _same_family_cols(s)
         if fam in fs:
             ks = rng.choice(fs[fam])
-            q = (f"SELECT COUNT(*) FROM {t.name} a JOIN {s.name} b "
-                 f"ON a.{k} = b.{ks}")
-            qtypes = ["int"]
+            # per-key join count: exposes both join-algorithm and
+            # grouping-algorithm arms on one query
+            q = (f"SELECT a.{k}, COUNT(*) FROM {t.name} a JOIN {s.name} b "
+                 f"ON a.{k} = b.{ks} GROUP BY a.{k}")
+            qtypes = [next(c.typ for c in t.cols if c.name == k), "int"]
+            is_join = True
     base, e0 = runner.run(q)
     if e0:
         return
     plan0 = runner.explain(q)
     arms = _ALGO_ARMS[dialect]
-    for name in (list(arms) if ex else rng.sample(list(arms), 3)):
+    if dialect == "pg":
+        # shape-relevant arms: join knobs can never fire on a single-table
+        # aggregate; agg/sort knobs never fire on a join count
+        gb = ["nohashagg", "nosort", "noincsort", "nopresorted",
+              "nogathermerge", "nomat", "nodistreord", "nogbreord",
+              "jit", "lowmem", "par", "genplan", "ce_on"]
+        # join queries group by the key too — union of both families
+        jn = ["nohj", "nomj", "nonl", "noseq", "noidx", "nomemoize",
+              "noparhash", "noasync", "nosjelim", "nohashagg",
+              "nosort", "nopresorted", "nomat", "lowmem", "par",
+              "jit", "genplan"]
+        pool = jn if is_join else gb
+        names = [n for n in pool if n in arms]
+        picks = names if ex else rng.sample(names, min(6, len(names)))
+    else:
+        picks = list(arms) if ex else rng.sample(list(arms), 3)
+    for name in picks:
         runner.exec(arms[name])
         rows, err = runner.run(q)
         plan = runner.explain(q)
@@ -1015,6 +1047,46 @@ def probe_rollup(runner, dialect, tables, rng, diffs, stats, ex=False):
     else:
         stats["rollup"] += 1
 
+    # 2-key ROLLUP ≡ union of plain GROUP BY levels — the grouping-sets
+    # machinery (mixed sorted/hashed strategies) must be transparent
+    ks = [c for c in t.cols if c.name not in ("rid", k.name)]
+    if not ks:
+        return
+    k2 = rng.choice(ks)
+    ntype = {"pg": {"int": "int", "int2": "smallint", "int8": "bigint",
+                    "num": "numeric", "flt": "float8", "txt": "text",
+                    "bool": "boolean", "jsb": "jsonb"},
+             "duck": {"int": "INTEGER", "int2": "SMALLINT",
+                      "int8": "BIGINT", "num": "DECIMAL(38,9)",
+                      "flt": "DOUBLE", "txt": "VARCHAR",
+                      "bool": "BOOLEAN", "jsb": "JSON"}}[dialect]
+    qr = (f"SELECT {k.name}, {k2.name}, COUNT(*), "
+          f"GROUPING({k.name}) ga, GROUPING({k2.name}) gb "
+          f"FROM {t.name} GROUP BY ROLLUP({k.name}, {k2.name})")
+    qu = (f"SELECT {k.name}, {k2.name}, COUNT(*), 0, 0 "
+          f"FROM {t.name} GROUP BY {k.name}, {k2.name} "
+          f"UNION ALL "
+          f"SELECT {k.name}, NULL::{ntype[k2.typ]}, COUNT(*), 0, 1 "
+          f"FROM {t.name} GROUP BY {k.name} "
+          f"UNION ALL "
+          f"SELECT NULL::{ntype[k.typ]}, NULL::{ntype[k2.typ]}, "
+          f"COUNT(*), 1, 1 FROM {t.name}")
+    rr, er = runner.run(qr)
+    ru, eu = runner.run(qu)
+    if er or eu:
+        return
+    ty = [k.typ, k2.typ, "int", "int", "int"]
+    if cbag(rr, ty) != cbag(ru, ty):
+        _diff(diffs, "rollup", "decomp_diff", q=qr, q2=qu,
+              got=[[str(v) for v in r] for r in rr][:10],
+              want=[[str(v) for v in r] for r in ru][:10])
+    elif bag(rr) != bag(ru):
+        _diff(diffs, "rollup", "decomp_rep", q=qr,
+              got=[[str(v) for v in r] for r in rr][:8],
+              want=[[str(v) for v in r] for r in ru][:8])
+    else:
+        stats["rollup2"] += 1
+
 
 def probe_index_range(runner, dialect, tables, rng, diffs, stats,
                       ex=False):
@@ -1095,15 +1167,25 @@ def probe_decompose(runner, dialect, tables, rng, diffs, stats, ex=False):
     if not split_cols:
         return
     g = rng.choice(split_cols)
-    q1 = f"SELECT {_fmt_agg(a, c.name)} FROM {t.name}"
+    # FILTER variant: a per-row filter commutes with the decomposition
+    filt = ""
+    others = [x for x in split_cols if x != g]
+    if others and rng.random() < 0.4:
+        f = rng.choice(others)
+        filt = f" FILTER (WHERE {f} IS NOT NULL)"
+    q1 = f"SELECT {_fmt_agg(a, c.name)}{filt} FROM {t.name}"
     if a in _AGG2:
         inner, outer = _AGG2[a]
+        if filt:
+            inner = ", ".join(
+                f"{x.rsplit(' ', 1)[0]}{filt} {x.rsplit(' ', 1)[1]}"
+                for x in inner.split(", "))
         q2 = (f"SELECT {outer} FROM (SELECT "
               f"{inner.format(c=c.name)} FROM {t.name} GROUP BY {g}) s")
     else:
         inner, outer = _AGG1[a]
         q2 = (f"SELECT {outer} FROM (SELECT "
-              f"{inner.format(c=c.name)} AS a FROM {t.name} "
+              f"{inner.format(c=c.name)}{filt} AS a FROM {t.name} "
               f"GROUP BY {g}) s")
     r1, e1 = runner.run(q1)
     r2, e2 = runner.run(q2)

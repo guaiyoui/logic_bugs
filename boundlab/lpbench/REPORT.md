@@ -217,18 +217,18 @@ closed-form degree products where applicable.
 
 Query `J2 = R(X,Y) ⋈_X S(X,Z)` unless noted. `q-err = bound/truth` (≥1).
 
-| case | truth | LpBound | ours |
-|---|---|---|---|
-| sym (aligned ranks) | 5,963,246 | 1.00 | 1.00 |
-| **anti_rank** (same domain, ranks reversed) | 23,228 | **256.73** | **1.00** |
-| **anti_dom** (disjoint supports) | 0 | 5,963,246 | **1** |
-| asym (n keys vs 40 hot keys) | 27,361,221 | 1.04 | **1.00** |
-| unif | 76,917 | 1.27 | **1.00** |
-| sym + range predicate | 1,752,639 | 1.00 | 1.00 |
-| star3 / sym (3 atoms share X) | 9.2e9 | 1.00 | 1.00 |
-| **star3 / anti_rank** | 5,973,360 | **1542.72** | **7.78** |
-| j3 chain / correlated | 2,856,962 | 6.49 | 3.86 |
-| **j3 chain / z-anticorr** | 28,577 | **630.18** | **206.88** |
+| case | truth | LpBound | ours (+pairs) | LB |
+|---|---|---|---|---|
+| sym (aligned ranks) | 5,963,246 | 1.00 | 1.00 | **exact** |
+| **anti_rank** (same domain, ranks reversed) | 23,228 | **256.73** | **1.00** | **exact** |
+| **anti_dom** (disjoint supports) | 0 | 5,963,246 | **1** | **exact (0)** |
+| asym (n keys vs 40 hot keys) | 27,361,221 | 1.04 | **1.00** | **exact** |
+| unif | 76,917 | 1.27 | **1.00** | **exact** |
+| sym + range predicate | 1,752,639 | 1.00 | 1.00 | **exact** |
+| star3 / sym (3 atoms share X) | 9.2e9 | 1.00 | 1.00 | 11.9M |
+| **star3 / anti_rank** | 5,973,360 | **1542.72** | **7.78** | 33,342 |
+| j3 chain / correlated | 2,856,962 | 6.49 | 3.86 | 990,598 |
+| **j3 chain / z-anticorr** | 28,577 | **630.18** | **206.88** | **23,149** |
 
 On any 2-atom query the pair constraint lands on the *full* attribute set
 `A_i ∪ A_j = V`, so our bound is **exactly the truth** — every J2 row is
@@ -240,21 +240,22 @@ On any 2-atom query the pair constraint lands on the *full* attribute set
 
 ### 5.2 cit-Patents, 3M edges, directed (in/out degree sequences differ)
 
-| motif | truth | LpBound | ours |
-|---|---|---|---|
-| **p2** `E(X,Y)⋈E(Y,Z)` | 3,892,651 | **4.81** | **1.00** |
-| tri (directed; graph is ~DAG → truth 0) | 0 | 14,534,776 | **3,892,651** |
-| path3 | 3,767,959 | 58.95 | **37.84** |
-| claw3 | 230,066,856 | 1.29 | 1.29 |
+| motif | truth | LpBound | +pairs | +triples | LB |
+|---|---|---|---|---|---|
+| **p2** `E(X,Y)⋈E(Y,Z)` | 3,892,651 | 4.81 | **1.00** | — | **3,892,651 (exact)** |
+| tri (≈DAG → truth 0) | 0 | 14,534,776 | **3,892,651** | — | **0 (exact)** |
+| claw3 | 230,066,856 | 1.29 | 1.29 | — | 45,211,328 |
+| path3 | 3,767,959 | 58.95 | **37.84** | — | 1,867,991 |
+| **path4** | 2,618,085 | 2067.18 | 2067.18 | **133.68** | n/a (no spine) |
 
 ### 5.3 Same data, undirected — the negative control
 
-| motif | LpBound | ours |
-|---|---|---|
-| p2 | 1.00 | 1.00 |
-| tri | 23.53 | 23.53 |
-| claw3 | 1.26 | 1.26 |
-| path3 | 1.69 | 1.69 |
+| motif | LpBound | +pairs | LB |
+|---|---|---|---|
+| p2 | 1.00 | 1.00 | 46,425,742 (exact) |
+| tri | 23.53 | 23.53 | 0 |
+| claw3 | 1.26 | 1.26 | 86,851,484 |
+| path3 | 1.69 | 1.69 | 86,851,484 |
 
 **Why the tie is expected and important**: after symmetrization all atoms
 share one degree sequence `deg`, so `|R_i ⋈ R_j| = Σ deg²` — which is
@@ -264,13 +265,45 @@ marginals already determine the inner product. This confirms the mechanism:
 **pair statistics pay off iff cross-relation alignment is not inferable
 from univariate marginals.**
 
-### 5.4 Cost
+### 5.4 The k-hop ladder and two-sided intervals
 
-- Storage: one scalar per connected atom pair (`O(m²)` worst case,
-  `O(m)` for chains; we use all pairs — selection is future work).
-- LP overhead: +0.2–0.5 s per query at 3M edges (statistic computation,
-  dominated by `np.unique` on base columns; LP itself is ms).
-- No bound ever regresses (constraints are monotone).
+Synthetic 4-chain `R(X,Y)-S(Y,Z)-T(Z,U)-V(U,W)` with `T.z` rank-reversed
+vs `S.z` (truth = 42,320):
+
+| arm | bound | q-err |
+|---|---|---|
+| LpBound | 126,823,654 | 2996.78 |
+| +pairs | 45,071,595 | 1065.02 |
+| +triples | 7,673,965 | **181.33** |
+
+Pairs alone are insufficient on length-4 chains (they cap 2-edge prefixes
+but the residual product still blows up); triples cap 3-edge subjoins and
+recover most of the gap. This is the expected tradeoff curve:
+storage `O(#connected k-subsets)` buys `k`-hop correlation.
+
+**Lower bounds** (`lower_bound`, new): spine/star inclusion-exclusion
+`Σ_t max(0, Σ deg_i(t) − (k−1))` and triangle `Σ max(0, deg(y)+deg(z)−n_X)`.
+Notable: on every 2-atom query the spine LB is *exact*, so J2/p2 intervals
+collapse to a point `[truth, truth]`. On `j3/anticorr` the interval is
+`[23,149, 5.9M]` around truth `28,577` — the LB is within 1.24× of truth
+while the UB carries the remaining slack. On `tri/directed` the interval is
+`[0, 3.9M]` — LB certifies emptiness up to the UB gap.
+
+**Proof certificates** (`certify`, new): the LP dual solution is extracted
+as `(inequality, dual weight, rhs)` triples; by strong duality
+`log2 bound = Σ w_i·b_i`. Verified to the last digit on all queries —
+e.g. `j4+pairs` decomposes as `bound = |R| · |T⋈V|` mediated by six Shannon
+inequalities. This is a machine-checkable proof sequence in the PANDA
+style, emitted for free by the solver.
+
+### 5.5 Cost
+
+- Storage: one scalar per connected atom subset (`O(m²)` pairs; `O(m)`
+  for chains — selection under a budget is future work).
+- LP overhead: ~0.2–5 s per query at 3M edges, dominated by `np.unique`
+  on base columns; the LP itself is ms (≤ 32 variables, ~10³ rows).
+- No bound ever regresses (constraints are monotone); every reported
+  bound verified `≥ truth`, every LB `≤ truth`.
 
 ---
 
@@ -303,25 +336,39 @@ space between us.
 
 ---
 
-## 7. What's next
+## 7. What's next — progress and remaining
 
-1. **Selection**: which pairs to materialize under a storage budget —
-   a knapsack/submodular optimization over LP dual values; ideal LLM-agent
-   task (propose selection rules, measure on workload).
-2. **Conditional / partitioned pair counts**: `|R_i ⋈ R_j|` grouped by
-   attributes of a *third* relation — should capture the transitive
-   correlation that leaves the 207× gap on `j3-anticorr`.
-3. **Lower bounds from pairs**: `|Q| ≥ |R_i ⋈ R_j|` is trivial, but
-   inclusion-exclusion over pairs (`|A⋈B⋈C| ≥ |A⋈B| + |B⋈C| − |B|`) gives
-   nontrivial xBound-style lower bounds for chains — worth formalizing.
-4. **Proof certificates**: extract the LP dual solution as a PANDA-style
-   proof sequence → machine-checkable proof of each reported bound.
-5. **Real workload**: JOB/STATS via Postgres-extracted degree sequences;
-   then end-to-end plan quality (the paper's metric: plans at least as
-   good as with true cardinalities).
-6. **LLM loop**: candidate-statistic generation → soundness check via the
-   support argument + adversarial counterexample search → LP integration —
-   the auto-research harness this prototype is a manual run of.
+Done in this round:
+
+1. ~~**Conditional / partitioned pair counts**~~ — partially: the `triples`
+   arm (exact 3-atom join counts) is the first step; on the synthetic
+   4-chain it recovers 1065× → 181×. Still open: *conditional* pair
+   counts (`|R_i ⋈ R_j|` partitioned by a third relation's keys), which
+   target the transitive-correlation gap that remains on `j3-anticorr`
+   (residual 207×).
+2. ~~**Lower bounds from pairs**~~ — `lower_bound` implemented: spine/star
+   inclusion-exclusion + triangle degree-sum. Two-sided intervals are now
+   emitted everywhere a template applies (exact on all 2-atom queries;
+   `[23.1K, 5.9M]` on `j3-anticorr`; `[0, 3.9M]` on directed tri).
+3. ~~**Proof certificates**~~ — `certify` extracts the LP dual as a
+   PANDA-style proof sequence; verified consistent by strong duality on
+   every query (e.g. `bound = |R|·|T⋈V|` + 6 Shannon steps on j4).
+
+Still open:
+
+4. **Selection**: which pair/triple stats to materialize under a storage
+   budget — knapsack over LP dual values; ideal LLM-agent task.
+5. **Conditional marginals**: pair counts conditioned on a third atom's
+   key group (the 207× residual on `j3-anticorr` is transitive
+   correlation that pairs cannot see).
+6. **Lower-bound coverage**: no template for 4-chains yet — need
+   overlapping-spine or separator-tree decompositions.
+7. **Real workload**: JOB/STATS via Postgres-extracted degree sequences;
+   end-to-end plan quality (the paper's bar: plans ≥ true-cardinality
+   plans).
+8. **LLM loop**: candidate-statistic generation → support-argument
+   soundness check + adversarial counterexample search → LP integration;
+   this prototype is the manual run of that loop.
 
 ---
 
