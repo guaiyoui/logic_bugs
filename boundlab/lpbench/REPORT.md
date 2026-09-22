@@ -330,6 +330,18 @@ Simple star/chain queries collapse to q-err ≈ 1.0 (pair count = truth).
 The n≥13 queries all run through the reduced LP; on `jobjoin.9` it
 reproduces the full-LP optimum bit-for-bit.
 
+**JOB-range (1000 queries, range/equality predicates — the largest
+suite):** 994/1000 evaluated (3 genuine empty results, 3 truth
+timeouts).
+
+| arm | geomean | median | p90 | max | exact | viol |
+|---|---|---|---|---|---|---|
+| LpBound | 111.0 | 90.4 | 2591 | 198533 | 0% | 0 |
+| +pairs | **7.30** | **5.70** | **67.4** | 13426 | 11% | 0 |
+
+Strictly tighter on **99%** of queries; 28% of bounds within 2× of
+truth.  LB emitted on 100%, 0 violations.
+
 **STATS (146 queries, Stack-Overflow, heavy predicates):**
 
 | arm | geomean | median | p90 | max | exact | viol |
