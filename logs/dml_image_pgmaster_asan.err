@@ -1,0 +1,32 @@
+Traceback (most recent call last):
+  File "/home/user/miniconda3/envs/py310/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/home/user/miniconda3/envs/py310/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/user/work/db_safety_v1/absoracle/dml_image.py", line 290, in <module>
+    main()
+  File "/home/user/work/db_safety_v1/absoracle/dml_image.py", line 251, in main
+    runner = PGSimple(PostgresRunner(
+  File "/home/user/work/db_safety/co_evolution_db_testing/targets/postgres_runner.py", line 69, in __init__
+    self._server = LocalPgServer(pg_prefix, self.datadir)
+  File "/home/user/work/db_safety/co_evolution_db_testing/targets/pg_local_server.py", line 92, in __init__
+    self.start()
+  File "/home/user/work/db_safety/co_evolution_db_testing/targets/pg_local_server.py", line 135, in start
+    self._initdb()
+  File "/home/user/work/db_safety/co_evolution_db_testing/targets/pg_local_server.py", line 126, in _initdb
+    raise RuntimeError(
+RuntimeError: initdb failed for /tmp/absdml_pgmaster_asan: =================================================================
+==1464021==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 376 byte(s) in 1 object(s) allocated from:
+    #0 0x7ca82f0fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x5d433f595ca2 in save_ps_display_args /home/user/work/db_safety/pgbld/build_master_asan/obj/../postgresql-20devel/src/backend/utils/misc/ps_status.c:203
+    #2 0x5d433e47f7fb in main /home/user/work/db_safety/pgbld/build_master_asan/obj/../postgresql-20devel/src/backend/main/main.c:104
+    #3 0x7ca82e42a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #4 0x7ca82e42a28a in __libc_start_main_impl ../csu/libc-start.c:360
+    #5 0x5d433d69f674 in _start (/home/user/work/db_safety/pgbld/pgmaster_asan/bin/postgres+0x3146674) (BuildId: dcf859742912d3c05f6c33b77326485dddef1e2f)
+
+SUMMARY: AddressSanitizer: 376 byte(s) leaked in 1 allocation(s).
+no data was returned by command ""/home/user/work/db_safety/pgbld/pgmaster_asan/bin/postgres" -V"
+child process exited with exit code 1
+initdb: error: program "postgres" is needed by initdb but was not found in the same directory as "/home/user/work/db_safety/pgbld/pgmaster_asan/bin/initdb"

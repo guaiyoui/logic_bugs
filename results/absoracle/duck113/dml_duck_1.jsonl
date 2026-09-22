@@ -1,0 +1,93 @@
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[1, true, 2]], "want": [[1, true, null]]}], "case": 0}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, 1, false]], "want": [[5, null, false]]}], "case": 9}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, true, "a", 11]], "want": [[3, false, "d", 11]]}], "case": 24}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[10, 3, "zz"]], "want": [[10, 3, "a"]]}], "case": 48}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[8, 8, true, "xyz"]], "want": [[8, 11, true, "b"]]}], "case": 70}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[8, 9, "c"]], "want": [[8, 9, "a"]]}], "case": 84}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[7, true, 9]], "want": [[7, null, 9]]}], "case": 100}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[1, 0, false, "d"]], "want": [[1, 4, false, "ab"]]}], "case": 110}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, 7, true]], "want": [[2, 7, false]]}], "case": 117}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[7, "a", 8, true]], "want": [[7, null, 8, false]]}], "case": 138}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[19, false, 2, "d"]], "want": [[19, true, 2, "a"]]}], "case": 139}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, "xyz", 42]], "want": [[3, "xyz", null]]}], "case": 141}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, 23, "a"]], "want": [[3, 17, "a"]]}], "case": 143}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[6, 8, true, "zz"]], "want": [[6, 0, true, "b"]]}], "case": 148}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[1, 9, true, "b"]], "want": [[1, 11, true, "zz"]]}], "case": 150}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, 5, true]], "want": [[2, 5, false]]}], "case": 158}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[8, false, "d", 23]], "want": [[8, null, "d", null]]}], "case": 161}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[12, "b", 2, false]], "want": [[12, "a", 2, true]]}], "case": 164}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[4, "", 1, true]], "want": [[4, "", null, null]]}], "case": 167}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, 6, true, "a"]], "want": [[2, 10, null, "a"]]}], "case": 170}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, "b", true, 10]], "want": [[2, "", true, 5]]}], "case": 172}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[4, false, 3, "a"]], "want": [[4, false, 3, null]]}], "case": 187}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[21, 42, true, "b"]], "want": [[21, 7, true, "b"]]}], "case": 203}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, 3, "xyz"]], "want": [[0, 8, "xyz"]]}], "case": 211}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[4, 3, true, "ab"]], "want": [[4, 10, false, "ab"]]}], "case": 214}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[7, 17, "zz"]], "want": [[7, 17, "a"]]}], "case": 223}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[6, 6, "b"]], "want": [[6, 6, null]]}], "case": 224}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[19, 17, "xyz"]], "want": [[19, 17, "ab"]]}], "case": 238}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[4, "ab", 3, false]], "want": [[4, "ab", 8, true]]}], "case": 242}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, 5, "zz"]], "want": [[3, 5, "a"]]}], "case": 257}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, "d", 0, true]], "want": [[5, "a", null, true]]}], "case": 261}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, "d", 9]], "want": [[0, "d", 11]]}], "case": 286}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[15, "ab", false, 1]], "want": [[15, null, false, null]]}], "case": 287}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[13, 11, "d"]], "want": [[13, 11, "c"]]}], "case": 292}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, 9, true]], "want": [[2, 4, true]]}], "case": 303}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[16, 9, true]], "want": [[16, 9, false]]}], "case": 304}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[6, "d", 42]], "want": [[6, "d", 8]]}], "case": 314}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[13, 2, true, "ab"]], "want": [[13, 5, true, "ab"]]}], "case": 352}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, 17, false]], "want": [[3, 17, null]]}], "case": 356}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[8, 4, false, "c"]], "want": [[8, 10, false, "c"]]}], "case": 358}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, 11, true]], "want": [[0, 5, true]]}], "case": 359}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, false, "", 2]], "want": [[3, true, null, 2]]}], "case": 365}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[15, true, "xyz", 3]], "want": [[15, false, "d", 3]]}], "case": 376}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[9, 5, "b", true]], "want": [[9, 8, "ab", true]]}], "case": 378}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, 2, true]], "want": [[2, 4, true]]}], "case": 382}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[7, "d", 23]], "want": [[7, "d", 0]]}], "case": 387}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[19, 42, false]], "want": [[19, 17, false]]}], "case": 390}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[7, false, 0, "a"]], "want": [[7, true, 6, "a"]]}], "case": 396}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[14, "ab", true, 2]], "want": [[14, "c", true, 2]]}], "case": 400}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, 0, false]], "want": [[2, 0, true]]}], "case": 426}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, false, 42]], "want": [[0, null, 42]]}], "case": 432}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[13, true, 17, ""]], "want": [[13, false, 3, ""]]}], "case": 464}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, "xyz", true, 8]], "want": [[3, "zz", false, 8]]}], "case": 470}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, 2, "a", true]], "want": [[0, 7, "a", null]]}], "case": 498}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, true, "b", 9]], "want": [[3, null, "b", 9]]}], "case": 499}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, 9, "xyz", true]], "want": [[5, 1, "b", true]]}], "case": 504}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[17, 42, "d"]], "want": [[17, 9, "d"]]}], "case": 524}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[11, 7, true, "a"]], "want": [[11, 5, true, "d"]]}], "case": 526}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[18, "", 0, false]], "want": [[18, "", 1, false]]}], "case": 527}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[18, 7, true]], "want": [[18, 7, false]]}], "case": 535}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, true, 6, "zz"]], "want": [[0, false, 4, "zz"]]}], "case": 536}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[4, "xyz", 5, true]], "want": [[4, null, null, true]]}], "case": 561}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[11, true, "a", 10]], "want": [[11, true, "a", 9]]}], "case": 575}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, 17, true, "b"]], "want": [[5, null, true, "ab"]]}], "case": 592}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, true, 5, ""]], "want": [[5, false, 6, ""]]}], "case": 602}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[23, true, "d", 3]], "want": [[23, false, "b", 3]]}], "case": 617}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, 10, true]], "want": [[0, 4, true]]}], "case": 629}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[8, 10, false]], "want": [[8, 10, true]]}], "case": 630}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, 4, "xyz"]], "want": [[3, 4, "c"]]}], "case": 636}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[8, 23, "a"]], "want": [[8, 7, "a"]]}], "case": 651}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[1, 6, true, "ab"]], "want": [[1, 6, true, "b"]]}], "case": 652}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, 1, true, "ab"]], "want": [[0, 1, true, "d"]]}], "case": 656}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[17, "", 1, false]], "want": [[17, null, 1, null]]}], "case": 658}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[8, false, 8, "a"]], "want": [[8, false, 9, "zz"]]}], "case": 663}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, "c", 6]], "want": [[5, "zz", 6]]}], "case": 666}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[11, 42, "ab", false]], "want": [[11, 42, "", true]]}], "case": 669}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[2, 10, ""]], "want": [[2, 10, "d"]]}], "case": 678}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, 2, false]], "want": [[5, 2, true]]}], "case": 680}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[6, "xyz", false, 11]], "want": [[6, null, false, 23]]}], "case": 682}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[4, 10, false, "zz"]], "want": [[4, 11, false, "d"]]}], "case": 685}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[4, 7, true]], "want": [[4, 2, true]]}], "case": 689}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[7, 42, true, "a"]], "want": [[7, 42, true, ""]]}], "case": 690}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, false, "a", 6]], "want": [[5, false, "ab", 0]]}], "case": 694}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[0, "", true, 0]], "want": [[0, "", false, null]]}], "case": 700}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[6, "xyz", 2]], "want": [[6, "xyz", 5]]}], "case": 708}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[3, false, 42, "xyz"]], "want": [[3, true, 42, "ab"]]}], "case": 710}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[7, "c", 8]], "want": [[7, "c", 1]]}], "case": 725}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[5, 3, "ab"]], "want": [[5, 23, "ab"]]}], "case": 726}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[18, false, "zz", 5]], "want": [[18, false, "a", null]]}], "case": 732}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[10, 0, false, "d"]], "want": [[10, 23, false, "d"]]}], "case": 741}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[1, "xyz", true, 9]], "want": [[1, null, true, 9]]}], "case": 746}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[14, 10, "c"]], "want": [[14, 10, "xyz"]]}], "case": 749}
+{"kind": "conflict", "table": "t0", "diffs": [{"check": "conflict_ret", "kind": "result_diff", "got": [[10, "xyz", 42, false]], "want": [[10, "c", 0, false]]}], "case": 758}
