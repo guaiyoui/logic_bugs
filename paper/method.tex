@@ -1,0 +1,132 @@
+\section{\framework{}: Moments in the Entropic LP}
+\label{sec:method}
+
+The certificate LP of \S\ref{sec:theory} is the canonical object.  For
+\emph{general} queries (cyclic, multi-separator, with group-by
+targets) the entropic LP remains the natural host: its variables
+interpolate between separators.  We therefore instantiate the moment
+hierarchy inside the entropic LP --- each observed joint moment
+becomes one support constraint --- while the certificate LP
+cross-validates the result on stars (\S\ref{sec:exp}).
+
+\subsection{Pair and Triple Statistics}
+
+\begin{definition}[Moment statistics, entropy side]
+\label{def:pairstat}
+For every \emph{connected} pair of atoms $i,j$ --- those sharing at
+least one attribute --- record the exact join count
+$\pcnt_{ij} = |R_i \Join_{A_i\cap A_j} R_j|$ and add
+\begin{equation}
+h(A_i \cup A_j) \;\le\; \log_2 \pcnt_{ij} .
+\label{eq:pair}
+\end{equation}
+Analogously, for every connected triple, $\tcnt_{ijk} =
+|R_i\Join R_j\Join R_k|$ yields $h(A_i\cup A_j\cup A_k) \le
+\log_2\tcnt_{ijk}$.
+\end{definition}
+
+\begin{theorem}[Soundness]
+\label{thm:sound}
+For any distribution on the output of $Q$, the marginal on
+$A_i\cup A_j$ has support at most $|R_i\Join R_j|$, so
+$h(A_i\cup A_j) \le \log_2\pcnt_{ij}$; hence~\eqref{eq:pair} is a
+valid inequality of the entropic LP for every database instance.
+The same holds for $k$-way counts.
+\end{theorem}
+
+\noindent Three properties make this the \emph{right} way to inject a
+joint moment:
+
+\begin{itemize}[leftmargin=10pt,itemsep=1pt]
+\item \emph{Strongest from one scalar.}  A single number bounds the
+  whole joint entropy, including attributes other than the join key.
+\item \emph{No new inequality family.}  Unlike
+  CorrBound~\cite{mayer2026corrbound} --- which must prove a new
+  (conditional-independence) inequality family --- the pair
+  constraint is a plain support bound; soundness is Theorem
+  \ref{thm:sound}, two lines.
+\item \emph{Exact, not sketched.}  We store the exact scalar count
+  ($O(1)$ per pair, $O(m^2)$ per query); no sketch error propagates
+  into the bound.
+\end{itemize}
+
+The count itself is needed only once per pair, at statistics time
+(not per query re-optimization), and coincides with the moment
+$\mu_{e_i+e_j}$ used by the certificate LP --- the two
+representations share one statistic.
+
+\subsection{The Reduced LP}
+\label{sec:reduced}
+
+The entropic LP has $2^n$ variables in $n = |V|$ attributes; JOB and
+STATS reach $n = 23$.  We keep the solve tractable with the same
+reduction as~\cite{zhang2025lpbound}: retain entropic variables only
+for a \emph{keepset} (separator attributes and their neighborhoods
+needed by active constraints), plus a \emph{ladder} of nested sets
+$U \subseteq U \cup \{x\}$ preserving elementary Shannon
+inequalities.  On JOB-join the reduced LP reproduces the full-LP
+bound bit-for-bit; it shrinks STATS queries from $2^{23}$ to
+$O(10^4)$ variables.
+
+\subsection{Proof Certificates}
+\label{sec:cert}
+
+Every bound is emitted together with a \emph{certificate}: the dual
+variables of the LP, i.e., a conic combination of named constraints
+(submodularity, $q$-inequalities, pair supports) that proves
+$h(V) \le \log B$.  Checking a certificate needs only linear
+arithmetic --- independent of the solver.  This upgrades a bound from
+a number to a proof object (in the spirit of
+PANDA~\cite{abokhamis2017panda}), and is what let our regression
+suite catch four soundness bugs during development
+(\S\ref{sec:impl}).
+
+\subsection{Statistics and Implementation}
+\label{sec:impl}
+
+\textbf{Counting.}
+Pair counts are hash-aggregates $O(|R_i|{+}|R_j|)$; triple counts use
+ordered hash joins in $O(\sum|R_i|)$ time with intermediate results
+folded into weights, never materialized.  Two SQL-semantics details
+are load-bearing: (i) bag semantics --- \texttt{COUNT(*)} counts
+\emph{physical rows}, so entropic variables are attached to
+duplicate-preserving row identities; (ii) \texttt{NULL}s do not join
+--- we encode nulls with per-column unique sentinels so they can
+never align, and null-aware predicate comparators keep filtered
+degree statistics consistent with SQL three-valued logic.
+
+\textbf{Key identity.}
+A join key is a pure value-based function of the tuple, identical
+across tables; our regression suite caught a per-table radix-packing
+scheme that produced invalid cross-table keys (silently under-counted
+pair joins $\Rightarrow$ violated bounds) and a merge-order bug that
+dropped an atom reachable only through a later atom in a triple join.
+Both surfaced as bound$<$truth violations under certificate
+checking --- evidence that the verification pipeline works.
+
+\textbf{Solver.}
+LPs are assembled in sparse CSR form; moment columns are
+scale-normalized; HiGHS runs with tightened feasibility/optimality
+tolerances ($10^{-9}$) plus a presolve/perturbation retry ladder.
+For the certificate LP we add a \emph{super-product floor}: any
+$\alpha \ge \mathbf{1}$ coordinatewise is itself a valid certificate
+($d^\alpha \ge \prod d_i$ on $\mathbf{N}^m$), so $UB$ is capped by
+$\min_{\alpha\ge\mathbf{1}}\mu_\alpha$ --- immunizing the reported
+bound against numerical sub-optimality of the solver.
+
+\begin{algorithm}[t]
+\caption{\framework{} bound computation}
+\label{alg:bound}
+\begin{algorithmic}[1]
+\REQUIRE query $Q$, relations $\{R_i\}$, moment budget $k$
+\ENSURE upper bound $B$, proof certificate $\pi$
+\STATE collect statistics: $\ell_p$ norms, pair counts $\pcnt_{ij}$,
+   $|\alpha|_1 \le k$ counts on connected subsets
+\STATE build entropic LP on reduced keepset + ladder (\S\ref{sec:reduced})
+\STATE add $q$-inequalities~\eqref{eq:qineq} and support
+   constraints~\eqref{eq:pair}
+\STATE $h^\star \gets$ LP optimum;\quad $B \gets 2^{h^\star}$
+\STATE $\pi \gets$ dual multipliers of binding constraints (\S\ref{sec:cert})
+\STATE \RETURN $(B,\pi)$
+\end{algorithmic}
+\end{algorithm}

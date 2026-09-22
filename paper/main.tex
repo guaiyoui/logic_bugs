@@ -1,0 +1,215 @@
+
+% VLDB template version of 2020-08-03 enhances the ACM template, version 1.7.0:
+% https://www.acm.org/publications/proceedings-template
+% The ACM Latex guide provides further information about the ACM template
+
+% \documentclass[sigconf, nonacm, pdfa]{acmart}
+\documentclass[sigconf, nonacm]{acmart}
+\usepackage{algorithmic}
+\usepackage{caption}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{booktabs}
+% \usepackage[a-2b]{pdfx}
+\usepackage{pifont}
+\usepackage{fancyhdr} % 导入fancyhdr包
+\pagestyle{fancy}
+\usepackage{color}
+\usepackage{soul, framed}
+\usepackage{makecell}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric,fit}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor,colortbl}
+\usepackage{multirow}
+\usepackage{bm,dsfont}
+\usepackage{subfigure}
+\usepackage{balance}
+\usepackage{stmaryrd}
+\usepackage{autobreak}
+\usepackage{enumitem}
+\usepackage{bbding}
+\usepackage{pifont}
+\usepackage{wasysym}
+% \usepackage{amssymb}
+% \usepackage{lineno}
+
+
+\newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}
+% \newtheorem{proof}{Proof}
+\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}
+
+
+%\newcommand{\netname}{\textit{BOLA}{\xspace}}
+\newcommand{\framework}{\textit{MomentBound}}
+\newcommand{\paircnt}{\textit{pair}}
+\newcommand{\triplecnt}{\textit{triple}}
+\newcommand{\pcnt}{\text{pc}}
+\newcommand{\tcnt}{\text{tc}}
+
+
+%% The following content must be adapted for the final version
+% paper-specific
+% \newcommand\vldbdoi{XX.XX/XXX.XX}
+
+% TODO: replace placeholder VLDB block at camera-ready
+\newcommand\vldbdoi{XX.XX/XXX.XX}
+\newcommand\vldbpages{XXX-XXX}
+% issue-specific
+\newcommand\vldbvolume{XX}
+\newcommand\vldbissue{X}
+\newcommand\vldbyear{20XX}
+% should be fine as it is
+\newcommand\vldbauthors{\authors}
+\newcommand\vldbtitle{\shorttitle} 
+% leave empty if no availability url should be set
+\newcommand\vldbavailabilityurl{https://github.com/guaiyoui/logic_bugs}
+% whether page numbers should be shown or not, use 'plain' for review versions, 'empty' for camera ready
+% \newcommand\vldbpagestyle{plain} 
+\newcommand\vldbpagestyle{empty}
+\fancyfoot[C]{\thepage}
+
+\begin{document}
+\title{MomentBound: Join-Size Bounds as Polynomial Certificates\\over Degree Fields}
+
+\author{Jianwei Wang}
+\affiliation{%
+  \institution{University of New South Wales}
+  }
+\email{jianwei.wang1@unsw.edu.au}
+\orcid{0009-0000-7887-4179}
+
+% \authornote{Kai Wang is the corresponding author.}
+
+\author{Kai Wang}
+% \authornotemark[1]
+\affiliation{%
+  \institution{ACEM, Shanghai Jiao Tong University}
+}
+\email{w.kai@sjtu.edu.cn}
+\orcid{0000-0002-3123-2184}
+
+\author{Xuemin Lin}
+\affiliation{%
+ \institution{ACEM, Shanghai Jiao Tong University}
+  }
+\email{xuemin.lin@sjtu.edu.cn}
+\orcid{0000-0003-2396-7225}
+
+\author{Wenjie Zhang}
+\affiliation{%
+  \institution{University of New South Wales}
+  }
+\email{wenjie.zhang@unsw.edu.au}
+\orcid{0000-0001-6572-2600}
+
+\author{Ying Zhang}
+% \authornote{Ying Zhang and Kai Wang are the joint corresponding authors.}
+\affiliation{%
+  \institution{Zhejiang Gongshang University}
+  }
+\email{ying.zhang@zjgsu.edu.cn}
+\orcid{0000-0002-2674-1638}
+
+% \author{Jianwei Wang$^{1}$ ~~ Kai Wang$^{2}$ ~~ Xuemin Lin$^{2}$~~Wenjie Zhang$^{1}$ ~~Ying Zhang$^{3}$}
+% \affiliation{\normalsize{$^{1}${The University of New South Wales, Sydney, Australia}}\\
+%  \normalsize{$^{2}${Antai College of Economics \& Management, Shanghai Jiao Tong University, Shanghai, China}} \\
+%  \normalsize{$^{3}${Zhejiang Gongshang University, Hangzhou, China}}}
+% \email{{jianwei.wang1, wenjie.zhang}@unsw.edu.au, {w.kai, xuemin.lin}@sjtu.edu.cn, ying.zhang@zjgsu.edu.cn}
+
+\begin{abstract}
+Pessimistic cardinality estimation computes a \emph{guaranteed} upper
+bound on the output size of a query from precomputed statistics on the
+base relations.  The state of the art, LpBound, feeds
+$\ell_p$-norms of per-relation degree sequences into a polymatroid
+linear program over entropic variables.  We observe that these
+statistics are all \emph{univariate}: they record the multiset of
+degrees but not their alignment across relations, while the join size
+itself is an inner product of degree sequences.  We therefore propose
+to treat join-size bounding as a \emph{moment problem on a degree
+field}: every key of a join attribute carries a degree vector, the
+true join size is its product moment, and every statistic is an
+observed moment $\mu_\alpha = \sum_x d(x)^\alpha$.  A bound is then a
+nonnegativity certificate --- a conic combination of observed
+monomials dominating the product polynomial on a worst-case domain ---
+computed by a small linear program whose dual is a worst-case
+alignment of the degree field.  This yields a Lasserre-style
+hierarchy in which $\ell_p$ norms are the level-1 (univariate)
+moments and exact $k$-way join counts are the higher levels, and it
+comes with exactness criteria: on star queries the bound collapses to
+the truth at the highest observed order, and one level earlier under
+key-collapse.  Instantiated inside the entropy LP, pair and triple
+join counts tighten the state of the art by up to an order of
+magnitude in geometric-mean q-error on the standard LpBound
+benchmarks (JOB-light, JOB-join, JOB-range on IMDB; STATS; DBLP
+subgraph matching), e.g.\ geomean $175\to 8.3$ on STATS, at a storage
+cost of one scalar per connected atom subset, while preserving a
+formal bound guarantee that we verify with LP-dual certificates on
+every query.
+\end{abstract}
+
+\begin{CCSXML}
+<ccs2012>
+   <concept>
+       <concept_id>10002951.10003227</concept_id>
+       <concept_desc>Information systems~Information systems applications</concept_desc>
+       <concept_significance>500</concept_significance>
+       </concept>
+ </ccs2012>
+\end{CCSXML}
+
+\maketitle
+
+%%% do not modify the following VLDB block %%
+%%% VLDB block start %%%
+\pagestyle{\vldbpagestyle}
+\begingroup\small\noindent\raggedright\textbf{PVLDB Reference Format:}\\
+\vldbauthors. \vldbtitle. PVLDB, \vldbvolume(\vldbissue): \vldbpages, \vldbyear.\\
+\href{https://doi.org/\vldbdoi}{doi:\vldbdoi}
+\endgroup
+\begingroup
+\renewcommand\thefootnote{}\footnote{\noindent
+This work is licensed under the Creative Commons BY-NC-ND 4.0 International License. Visit \url{https://creativecommons.org/licenses/by-nc-nd/4.0/} to view a copy of this license. For any use beyond those covered by this license, obtain permission by emailing \href{mailto:info@vldb.org}{info@vldb.org}. Copyright is held by the owner/author(s). Publication rights licensed to the VLDB Endowment. \\
+\raggedright Proceedings of the VLDB Endowment, Vol. \vldbvolume, No. \vldbissue\ %
+ISSN 2150-8097. \\
+\href{https://doi.org/\vldbdoi}{doi:\vldbdoi} \\
+}\addtocounter{footnote}{-1}\endgroup
+%%% VLDB block end %%%
+
+%%% do not modify the following VLDB block %%
+%%% VLDB block start %%%
+\ifdefempty{\vldbavailabilityurl}{}{
+\vspace{.3cm}
+\begingroup\small\noindent\raggedright\textbf{PVLDB Artifact Availability:}\\
+The source code, data, and/or other artifacts have been made available at \url{https://github.com/guaiyoui/logic_bugs}.
+\endgroup
+}
+%%% VLDB block end %%%
+
+\input{introduction}
+\input{preliminary}
+\input{theory}
+\input{method}
+\input{experiment}
+\input{relatedwork}
+
+\input{conclusion}
+
+\begin{acks}
+Kai Wang is the corresponding author.
+\end{acks}
+
+%\clearpage
+
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{sample}
+
+\end{document}
+\endinput

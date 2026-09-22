@@ -1,0 +1,219 @@
+\section{Experiments}
+\label{sec:exp}
+
+We evaluate \framework{} on the full LpBound evaluation suite plus a
+synthetic suite designed to isolate the alignment mechanism.  Three
+questions guide the section: \textbf{(Q1)} does observing joint
+moments tighten bounds where the theory predicts, and tie where it
+predicts a tie? \textbf{(Q2)} does the certificate LP of
+\S\ref{sec:theory} reproduce the entropy LP in practice?
+\textbf{(Q3)} are all emitted bounds sound?
+
+\textbf{Setup.}  The baseline arm (\emph{lpbound}) is our clean-room
+reimplementation of~\cite{zhang2025lpbound}: the entropy LP with all
+elementary Shannon inequalities and $q$-inequalities for $p \in
+\{1,\dots,10,\infty\}$ over full and simple degree sequences, with
+predicates folded into filtered relations before statistics are
+computed (stronger than the paper's MCV approximation --- the
+baseline gets an unfair advantage).  \emph{+pairs} adds all connected
+pair-count constraints~\eqref{eq:pair}; \emph{+triples} adds
+connected triples.  Truth is exact \texttt{COUNT(*)} in DuckDB on the
+identical parsed rows.  q-error $=$ bound/truth $\ge 1$; any value
+$<1$ is a violation.  Solver: HiGHS via scipy; bounds verified
+against truth on every evaluated query.
+
+\subsection{Synthetic Mechanism Validation}
+\label{sec:exp:syn}
+
+Zipf-distributed degrees on a 3{,}000-key domain; query
+$R(X,Y)\Join_X S(X,Z)$ unless noted (Table~\ref{tab:syn}).
+
+\begin{table}[t]
+\centering\small
+\caption{Synthetic queries (q-err $=$ bound/truth; lower is better)}
+\label{tab:syn}
+\scalebox{0.92}{
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+case & truth & lpbound & +pairs \\ \midrule
+sym (ranks aligned)      & 5.96M & 1.00   & 1.00 \\
+\textbf{anti\_rank} (reversed) & 23K & 256.73 & \textbf{1.00} \\
+\textbf{anti\_dom} (disjoint)  & 0   & 6.0M   & \textbf{1} \\
+asym (skewed supports)   & 27.4M & 1.04   & 1.00 \\
+unif                     & 77K   & 1.27   & 1.00 \\
+star3/sym                & 9.2B  & 1.00   & 1.00 \\
+\textbf{star3/anti\_rank}      & 6.0M  & 1542.72 & \textbf{7.78} \\
+j3 chain/correlated      & 2.9M  & 6.49   & 3.86 \\
+\textbf{j3 chain/anticorr}     & 29K   & 630.18  & \textbf{206.88} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Three findings.  \emph{(i) Mechanism confirmed}: on two-atom queries
+the pair constraint lands on $V$ itself, so every J2 bound is exact
+--- including \texttt{anti\_rank} (257$\times$ gap closed) and
+\texttt{anti\_dom}, where identical univariate statistics coexist
+with a \emph{zero} join.  \emph{(ii) Hierarchy trades storage for
+correlation depth}: on the 3-atom star, pairs collapse 1543$\times$
+to 7.8$\times$; triples close the rest (Table~\ref{tab:chain}).
+\emph{(iii) Residuals are characterized}: the 207$\times$ left on
+\texttt{j3/anticorr} is within-relation transitive correlation that
+no cross-relation scalar can see --- the predicted limit of level 2.
+
+\begin{table}[t]
+\centering\small
+\caption{4-chain with one reversed separator (truth $= 42{,}320$)}
+\label{tab:chain}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+arm & bound & q-err \\ \midrule
+lpbound  & 126{,}823{,}654 & 2996.78 \\
++pairs   & 45{,}071{,}595  & 1065.02 \\
++triples & 7{,}673{,}965   & \textbf{181.33} \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Directed vs.\ undirected graph} (cit-Patents, 3M edges;
+Table~\ref{tab:pat}).  On the \emph{directed} graph, in/out-degree
+sequences differ and alignment is unobservable: \texttt{p2} goes
+4.81$\to$1.00, \texttt{path4} 2067$\to$134 with triples.  On the
+\emph{undirected} control, all atoms share one degree sequence, so
+$|R_i\Join R_j| = \sum_x \deg(x)^2$ is already implied by the
+$p{=}q{=}2$ constraints --- and indeed every bound ties.  This
+negative control is the sharp statement of our claim: pair moments
+pay off \emph{iff} alignment is not inferable from univariate
+marginals.
+
+\begin{table}[t]
+\centering\small
+\caption{cit-Patents motifs (q-err).  Undirected = negative control.}
+\label{tab:pat}
+\scalebox{0.92}{
+\begin{tabular}{@{}lrrr|rr@{}}
+\toprule
+& \multicolumn{3}{c|}{directed} & \multicolumn{2}{c}{undirected} \\
+motif & lpbound & +pairs & +triples & lpbound & +pairs \\ \midrule
+p2     & 4.81    & \textbf{1.00} & ---    & 1.00  & 1.00 \\
+tri    & 14.5M   & 3.9M   & ---    & 23.53 & 23.53 \\
+claw3  & 1.29    & 1.29   & ---    & 1.26  & 1.26 \\
+path3  & 58.95   & 37.84  & ---    & 1.69  & 1.69 \\
+path4  & 2067.18 & 2067.18& 133.68 & ---   & --- \\ \bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{JOB on IMDB}
+\label{sec:exp:job}
+
+The official LpBound workloads: JOB-light (70 queries, 4--8 tables,
+predicates), JOB-join (31 queries, up to 14 tables / 23 attributes,
+no predicates), JOB-range (1000 queries, range+equality predicates).
+
+\begin{table}[t]
+\centering\small
+\caption{JOB workloads on IMDB (q-err; viol $=$ bound $<$ truth)}
+\label{tab:job}
+\scalebox{0.88}{
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+workload & arm & geomean & median & p90 & max & exact \\ \midrule
+JOB-light & lpbound & 16.14 & 10.12 & 98.0  & 6089   & 0\% \\
+(70 q)    & +pairs  & \textbf{4.97} & \textbf{3.89} & \textbf{32.7} & 467 & 6\% \\ \midrule
+JOB-join  & lpbound & 10.07 & 4.64  & 123.6 & 4654   & --- \\
+(29 q)    & +pairs  & \textbf{5.05} & \textbf{3.46} & \textbf{60.0} & 539 & --- \\ \midrule
+JOB-range & lpbound & 111.0 & 90.4  & 2591  & 198533 & 0\% \\
+(994 q)   & +pairs  & \textbf{7.30} & \textbf{5.70} & \textbf{67.4} & 13426 & 11\% \\ \bottomrule
+\end{tabular}}
+\end{table}
+
+Table~\ref{tab:job}: pair moments tighten bounds on 93--100\% of
+queries with zero violations.  The largest gain is on JOB-range
+(15.2$\times$ geomean), where predicates decorrelate the filtered
+degree sequences --- exactly the regime where the H\"older
+gap~\eqref{eq:gap} is large.  Highlights: \texttt{jobjoin.27}
+4654$\to$540, \texttt{jobjoin.11} 117$\to$6.6; simple stars collapse
+to q-err $\approx 1$.
+
+\subsection{STATS on StackOverflow}
+\label{sec:exp:stats}
+
+146 queries, heavy predicates, many 4-atom stars (1 truth timeout;
+145 evaluated).
+
+\begin{table}[t]
+\centering\small
+\caption{STATS (145 queries; q-err)}
+\label{tab:stats}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+arm & geomean & median & p90 & max & exact \\ \midrule
+lpbound  & 175.3 & 108.4 & 14370 & 4.7e8  & 1\% \\
++pairs   & 88.5  & 44.8  & 8710  & 3.1e8  & 8\% \\
++triples & \textbf{8.28} & \textbf{4.91} & \textbf{255} & \textbf{1995} & \textbf{34\%} \\ \bottomrule
+\end{tabular}
+\end{table}
+
+Triples are the headline (Table~\ref{tab:stats}): a further
+10.7$\times$ geomean over pairs, 34\% of queries \emph{exact}.
+E.g., \texttt{stats.13} $108\to35\to1.00$, \texttt{stats.14}
+$6170\to2240\to1.00$, \texttt{stats.116} $9224\to4002\to22.8$.  The
+4-atom stars dominating STATS' tail are the transitive-correlation
+regime pairs cannot see; a 3-way marginal covers the connected
+skeleton.  Remaining slack (max 1995) is within-relation conditional
+correlation --- the motivation for conditional marginals
+(\S\ref{sec:conclusion}).
+
+\subsection{DBLP Dense Patterns: Predicted Tie}
+\label{sec:exp:dblp}
+
+30 dense 8-vertex subgraph patterns, bound-only protocol (DuckDB
+times out on most dense patterns; q-err comparison is on bounds).
+Result: \emph{pairs/lpbound bound-ratio geomean $= 1.000$, 100\%
+ties}.  Expected: after label propagation each edge atom is tiny
+($\sim$9K rows) and the univariate degree sequences already dominate
+pair counts --- the same mechanism as the undirected control, now on
+real data.
+
+\subsection{Certificate LP = Entropy LP, Verified}
+\label{sec:exp:cert}
+
+Solving the certificate LP~\eqref{eq:ub} directly (cutting-plane
+separation over $\Omega$) reproduces the entropy LP
+\emph{query-by-query} on all 69 single-separator star queries of
+STATS: univariate 58.4 vs.\ 58.9 geomean (grid dominance makes the
+certificate LP marginally tighter), +pairs 30.6 vs.\ 29.8, +triples
+3.73 vs.\ 2.87 (the Shannon web across subset unions captures what
+three scalar moments miss on $m{=}4$).  Bit-identical on 17/68
+(pair) and 15/63 (triple) cells.  The hierarchy levels are visible
+directly: $m{=}3$ stars hit $\mu_{111}{=}$truth on 25/25; $m{=}4$
+stars are exact exactly on the six queries carrying a key-collapsed
+atom --- Lemma~\ref{lem:collapse} both sufficient and, on this
+workload, necessary.
+
+\subsection{Lower Bounds and Intervals}
+\label{sec:exp:lb}
+
+The best-case-alignment LP~\eqref{eq:lb} plus spine
+inclusion--exclusion emits two-sided intervals: exact (a point) on
+every 2-atom query; the interval $[23.1\text{K},\ 5.9\text{M}]$
+around truth 28.6K
+on \texttt{j3/anticorr}; and $[0,\ 3.9\text{M}]$ certifying possible
+emptiness on directed triangles.  On stars with $m\ge3$ the monomial
+cone provably degenerates to 0 (\S\ref{sec:lbwing}) --- recorded as
+the basis-limitation open problem rather than hidden.
+
+\subsection{Cost and Robustness}
+\label{sec:exp:cost}
+
+Storage is one scalar per connected atom subset ($O(m^2)$ pairs).
+Statistics are hash aggregates, computed once; JOB-light runs
+$\approx$9\,s/query median, dominated by degree-sequence scans on the
+33M-row \texttt{cast\_info} --- the reduced LP itself is ms--s.
+Regression checking caught four soundness bugs that a synthetic-only
+evaluation would have missed (\S\ref{sec:impl}): SQL bag semantics
+on row-id attributes, NULL-join semantics, cross-table key packing,
+and a merge-order under-count in triple joins.  On badly-scaled
+moment LPs, HiGHS can return a numerically suboptimal point; the
+super-product floor caps $UB$ at $\min_{\alpha\ge\mathbf{1}}\mu_\alpha$,
+and a perturbed-retry ladder recovered 3 of 4 degenerate cells (one
+pair cell on \texttt{stats.107} is reported missing rather than
+silently looser).

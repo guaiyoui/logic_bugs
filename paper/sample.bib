@@ -1,0 +1,195 @@
+%%% ==================================================================
+%%% Pessimistic / worst-case cardinality bounds
+%%% ==================================================================
+
+@article{zhang2025lpbound,
+  author    = {Zhang, Haozhe and Mayer, Christoph and Abo Khamis, Mahmoud and Olteanu, Dan and Suciu, Dan},
+  title     = {{LpBound}: Pessimistic Cardinality Estimation Using $\ell_p$-Norms of Degree Sequences},
+  journal   = {Proc. ACM Manag. Data},
+  volume    = {3},
+  number    = {3},
+  year      = {2025},
+  doi       = {10.1145/3725321},
+}
+
+@inproceedings{abokhamis2024lp,
+  author    = {Abo Khamis, Mahmoud and Nakos, Vasileios and Olteanu, Dan and Suciu, Dan},
+  title     = {Join Size Bounds Using $\ell_p$-Norms on Degree Sequences},
+  booktitle = {Proc. ACM Symposium on Principles of Database Systems (PODS)},
+  year      = {2024},
+}
+
+@article{mayer2026corrbound,
+  author    = {Mayer, Christoph and Zhang, Haozhe and Abo Khamis, Mahmoud and Deeds, Kyle and Olteanu, Dan and Suciu, Dan},
+  title     = {{CorrBound}: Cardinality Estimation Accounting for Inter- and Intra-Relation Correlations},
+  journal   = {Proc. ACM Manag. Data},
+  volume    = {4},
+  number    = {1},
+  year      = {2026},
+  doi       = {10.1145/3786633},
+}
+
+@inproceedings{cai2019pessimistic,
+  author    = {Cai, Walter and Balazinska, Magdalena and Suciu, Dan},
+  title     = {Pessimistic Cardinality Estimation: Tighter Upper Bounds for Intermediate Join Cardinalities},
+  booktitle = {Proc. ACM SIGMOD International Conference on Management of Data},
+  pages     = {18--35},
+  year      = {2019},
+}
+
+@inproceedings{deeds2023degree,
+  author    = {Deeds, Kyle and Suciu, Dan and Balazinska, Magdalena},
+  title     = {Degree Sequence Bound for Join Cardinality Estimation},
+  booktitle = {Proc. International Conference on Database Theory (ICDT)},
+  pages     = {8:1--8:18},
+  year      = {2023},
+  doi       = {10.4230/LIPIcs.ICDT.2023.8},
+}
+
+@inproceedings{deeds2023safebound,
+  author    = {Deeds, Kyle and Suciu, Dan and Balazinska, Magdalena},
+  title     = {{SafeBound}: A Practical System for Generating Cardinality Bounds},
+  booktitle = {Proc. ACM SIGMOD International Conference on Management of Data},
+  year      = {2023},
+  doi       = {10.1145/3588907},
+}
+
+@inproceedings{deeds2025partition,
+  author    = {Deeds, Kyle and Merkl, Timo Camillo},
+  title     = {Partition Constraints for Conjunctive Queries: Bounds and Worst-Case Optimal Joins},
+  booktitle = {Proc. International Conference on Database Theory (ICDT)},
+  pages     = {17:1--17:18},
+  year      = {2025},
+  doi       = {10.4230/LIPIcs.ICDT.2025.17},
+}
+
+@article{stoian2026xbound,
+  author    = {Stoian, Mihail and Bang, Tiemo and Zhao, Hangdong and Camacho-Rodr{\'i}guez, Jes{\'u}s and Tian, Yuanyuan and Kipf, Andreas},
+  title     = {The Case for Cardinality Lower Bounds},
+  journal   = {CoRR},
+  volume    = {abs/2601.13117},
+  year      = {2026},
+}
+
+@article{stoian2026outofbounds,
+  author    = {Stoian, Mihail and Bang, Tiemo and Zhao, Hangdong and Camacho-Rodr{\'i}guez, Jes{\'u}s and Tian, Yuanyuan and Kipf, Andreas},
+  title     = {How Out-of-Bounds Are Your Cardinality Estimates?},
+  journal   = {Proc. VLDB Endow.},
+  volume    = {19},
+  number    = {12},
+  pages     = {4510--4513},
+  year      = {2026},
+  doi       = {10.14778/3827998.3828052},
+}
+
+%%% ==================================================================
+%%% AGM / worst-case optimal joins / PANDA
+%%% ==================================================================
+
+@article{atserias2013size,
+  author    = {Atserias, Albert and Grohe, Martin and Marx, D{\'a}niel},
+  title     = {Size Bounds and Query Plans for Relational Joins},
+  journal   = {SIAM Journal on Computing},
+  volume    = {42},
+  number    = {4},
+  pages     = {1737--1767},
+  year      = {2013},
+}
+
+@inproceedings{atserias2008agm,
+  author    = {Atserias, Albert and Grohe, Martin and Marx, D{\'a}niel},
+  title     = {Size Bounds and Conjunctive Queries},
+  booktitle = {Proc. International Conference on Database Theory (ICDT)},
+  year      = {2008},
+}
+
+@inproceedings{ngo2012worst,
+  author    = {Ngo, Hung Q. and Porat, Ely and R{\'e}, Christopher and Rudra, Atri},
+  title     = {Worst-Case Optimal Join Algorithms},
+  booktitle = {Proc. ACM Symposium on Principles of Database Systems (PODS)},
+  pages     = {37--48},
+  year      = {2012},
+}
+
+@article{ngo2014skew,
+  author    = {Ngo, Hung Q. and R{\'e}, Christopher and Rudra, Atri},
+  title     = {Skew Strikes Back: New Developments in the Theory of Join Algorithms},
+  journal   = {SIGMOD Record},
+  volume    = {42},
+  number    = {4},
+  pages     = {5--16},
+  year      = {2014},
+}
+
+@inproceedings{veldhuizen2014leapfrog,
+  author    = {Veldhuizen, Todd L.},
+  title     = {{Leapfrog Triejoin}: A Simple, Worst-Case Optimal Join Algorithm},
+  booktitle = {Proc. International Conference on Database Theory (ICDT)},
+  pages     = {96--106},
+  year      = {2014},
+}
+
+@article{wang2023freejoin,
+  author    = {Wang, Yisu Remy and Willsey, Max and Suciu, Dan},
+  title     = {{Free Join}: Unifying Worst-Case Optimal and Traditional Joins},
+  journal   = {Proc. ACM Manag. Data},
+  volume    = {1},
+  number    = {2},
+  year      = {2023},
+}
+
+@inproceedings{abokhamis2017panda,
+  author    = {Abo Khamis, Mahmoud and Ngo, Hung Q. and Suciu, Dan},
+  title     = {What Do {S}hannon-Type Inequalities, Submodular Width, and Disjunctive {D}atalog Have to Do with One Another?},
+  booktitle = {Proc. ACM Symposium on Principles of Database Systems (PODS)},
+  pages     = {429--444},
+  year      = {2017},
+}
+
+%%% ==================================================================
+%%% Cardinality estimation benchmarks and systems
+%%% ==================================================================
+
+@article{leis2015howgood,
+  author    = {Leis, Viktor and Gubichev, Andrey and Mirchev, Atanas and Boncz, Peter and Kemper, Alfons and Neumann, Thomas},
+  title     = {How Good Are Query Optimizers, Really?},
+  journal   = {Proc. VLDB Endow.},
+  volume    = {9},
+  number    = {3},
+  pages     = {204--215},
+  year      = {2015},
+}
+
+@article{leis2018query,
+  author    = {Leis, Viktor and Radke, Bernhard and Gubichev, Andrey and Mirchev, Atanas and Boncz, Peter and Kemper, Alfons and Neumann, Thomas},
+  title     = {Query Optimization Through the Looking Glass, and What We Found Running the {Join Order Benchmark}},
+  journal   = {The VLDB Journal},
+  volume    = {27},
+  number    = {5},
+  pages     = {643--668},
+  year      = {2018},
+}
+
+@article{han2021cardinality,
+  author    = {Han, Yuxing and Wu, Ziniu and Wu, Peizhi and Zhu, Rong and Yang, Jingyi and Tan, Liang Wei and Zeng, Kai and Cong, Gao and Qin, Yanzhao and Pfadler, Andreas and Qian, Zhengping and Zhou, Jingren and Li, Jiangneng and Cui, Bin},
+  title     = {Cardinality Estimation in {DBMS}: A Comprehensive Benchmark Evaluation},
+  journal   = {Proc. VLDB Endow.},
+  volume    = {15},
+  number    = {4},
+  pages     = {752--765},
+  year      = {2021},
+}
+
+%%% ==================================================================
+%%% Moment problems / polynomial optimization
+%%% ==================================================================
+
+@article{lasserre2001,
+  author    = {Lasserre, Jean B.},
+  title     = {Global Optimization with Polynomials and the Problem of Moments},
+  journal   = {SIAM Journal on Optimization},
+  volume    = {11},
+  number    = {3},
+  pages     = {796--817},
+  year      = {2001},
+}

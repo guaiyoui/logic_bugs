@@ -1,0 +1,17 @@
+\begin{table*}
+\caption{Comparison among provable join-size bounds}
+\centering \scalebox{0.9}{
+\begin{tabular}
+{@{}lccccc@{}}
+\toprule[1.2pt]
+Bound & \makecell[c]{Statistics}   & \makecell[c]{Cross-relation\\alignment?}    & \makecell[c]{Form}  & \makecell[c]{Storage\\per statistic} & \makecell[c]{Exact on\\stars?}          \\ \midrule
+AGM~\cite{atserias2013size,atserias2008agm} & relation sizes $|R|$ & \XSolidBrush & edge-cover LP & $O(1)$ & \XSolidBrush \\
+PCE~\cite{cai2019pessimistic} & sizes $+$ max degrees & \XSolidBrush & per-join rollup & $O(1)$ & \XSolidBrush \\
+SafeBound~\cite{deeds2023safebound}/DSB~\cite{deeds2023degree} & (compressed) degree sequences & \XSolidBrush & functional approx. & $O(\text{segments})$ & \makecell[c]{Berge-acyclic\\only} \\
+LpBound~\cite{zhang2025lpbound,abokhamis2024lp} & $\ell_p$-norms of degree seq. & \XSolidBrush & entropy LP & $O(|P|)$ & \XSolidBrush \\
+CorrBound~\cite{mayer2026corrbound} & sketched inner products & \makecell[c]{\Checkmark\\(approximate)} & entropy LP & $O(\text{sketch})$ & \XSolidBrush \\
+\midrule
+\framework~(ours) & exact $k$-way join counts $=$ moments $\mu_\alpha$ & \makecell[c]{\Checkmark\\(exact)} & \makecell[c]{entropy LP $+$\\certificate LP} & $O(1)$ & \makecell[c]{\Checkmark\\(order $m$, or\\$m{-}1$ under\\key-collapse)} \\ \bottomrule
+\end{tabular}}
+\label{tab:intro_comparasion}
+\end{table*}

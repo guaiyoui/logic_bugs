@@ -1,0 +1,26 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We recast join-size bounding as a moment problem on the degree field:
+the query answer is a product moment, statistics are observed moments,
+and a bound is a polynomial nonnegativity certificate whose dual is a
+worst-case alignment.  In this frame, LpBound is the level-1 section
+and exact pair/triple join counts are levels 2 and 3 of a Lasserre-style
+hierarchy with characterizable exactness conditions.  Instantiated in
+the entropic LP, the method improves the state of the art by up to
+$21\times$ geomean on the official evaluation suite --- with zero
+violations, a predicted negative control on DBLP, and machine-checkable
+proof certificates for every number reported.
+
+Three directions remain open.  \emph{Conditional marginals}: the
+residual tail on STATS (max 1995$\times$) is within-relation
+correlation requiring pair counts conditioned on a third relation's
+keys --- a strict generalization of partition constraints across
+relations.  \emph{Statistic selection}: the H\"older
+gap~\eqref{eq:gap} gives a computable per-pair gain, turning
+which-moments-to-materialize into a budgeted optimization problem.
+\emph{The lower-bound wing}: hinge bases over inclusion--exclusion
+moments complete the two-sided interval picture.  More broadly, the
+propose--verify--score loop this paper executes by hand --- propose a
+statistic, prove its constraint by a support argument, score it on
+bounds --- is a natural target for automation.

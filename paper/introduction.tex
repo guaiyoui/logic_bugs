@@ -1,0 +1,144 @@
+\section{Introduction}
+\label{sec:Introduction}
+
+\input{intro_comparation_table}
+
+Cardinality estimation (CE) --- predicting the output size of a query
+without evaluating it --- remains, four decades on, the optimizer's
+Achilles heel~\cite{leis2015howgood,han2021cardinality}.
+Underestimates are the catastrophic failure mode: they steer the
+optimizer toward plans designed for small data, causing intermediate
+results to explode at runtime.  This observation has motivated a line
+of work on \emph{pessimistic} cardinality estimation (PCE): compute a
+\emph{provable upper bound} on the join size from statistics
+precomputed on the base relations~\cite{cai2019pessimistic,
+deeds2023degree,deeds2023safebound,abokhamis2024lp,zhang2025lpbound}.
+A bound that is never violated doubles as a soundness oracle for any
+estimator~\cite{stoian2026outofbounds}, and injected into an
+optimizer it provably eliminates catastrophic
+plans~\cite{zhang2025lpbound}.
+
+The state of the art is LpBound~\cite{zhang2025lpbound,
+abokhamis2024lp}.  Its statistics are $\ell_p$-norms of
+\emph{degree sequences}: for a join attribute $X$ of relation $R$,
+$\deg_R(X)$ is the multiset of value frequencies, and its norms
+$\|\deg_R(X)\|_p$ feed a polymatroid linear program whose variables
+are the joint entropies $h(U)$ of attribute subsets of the query
+output.  Each statistic enters through a \emph{$q$-inequality}
+$(1/p)h(U) + h(V\,|\,U) \le \log\|\deg_R(V\,|\,U)\|_p$ --- one
+application of H\"older's inequality --- and the optimum
+$2^{h(V)}$ upper-bounds $|Q|$.
+
+\vspace{1mm}
+\noindent\textbf{The blind spot: univariate statistics.}
+Every statistic LpBound observes is a function of the \emph{multiset}
+of degrees of one relation at a time.  But the size of a join is an
+inner product: $|R\Join_X S| = \sum_x \deg_R(x)\cdot\deg_S(x)$, which
+depends entirely on how the two sequences \emph{align} over the key
+domain.  As a consequence, three databases can share every $\ell_p$
+norm yet differ in join size by orders of magnitude:
+
+\begin{center}\small
+\begin{tabular}{l|c|c}
+alignment & same degree multisets & $\sum_x a_x b_x$ \\ \hline
+ranks aligned & $a{=}[8,4,2], b{=}[9,3,1]$ & $86$ \\
+ranks reversed & $a{=}[8,4,2], b{=}[1,3,9]$ & $38$ \\
+disjoint supports & $a{=}[8,4,2], b{=}[0,0,0]$ & $0$ \\
+\end{tabular}
+\end{center}
+
+\noindent No univariate-statistic bound can separate these instances;
+any tighter bound must observe \emph{joint} information across
+relations.  The question is which joint statistic to buy, at what
+storage cost, and with what formal guarantee.
+
+\vspace{1mm}
+\noindent\textbf{Our framework: bounds as polynomial certificates.}
+We answer this question by re-founding the problem itself.  On a star
+join $R_1\Join_X\cdots\Join_X R_m$, every key $x$ of the separator
+$X$ carries a \emph{degree vector}
+$d(x) = (d_1(x),\dots,d_m(x))\in\mathbf{N}^m$, and the join size is
+the \emph{product moment} of this \emph{degree field}:
+$|Q| = \sum_x \prod_i d_i(x)$.  Every statistic is an observed moment
+$\mu_\alpha = \sum_x d(x)^\alpha$ --- including LpBound's, since
+$\mu_{p\cdot e_i} = \|\deg_i\|_p^p$.  A bound is then nothing more
+(and nothing less) than a \emph{nonnegativity certificate}: a conic
+combination of observed monomials that dominates the product
+polynomial pointwise, $\prod_i d_i \le \sum_\alpha c_\alpha d^\alpha$
+on a worst-case domain $\Omega$.  AM--GM, Young, and H\"older's
+inequalities are the closed-form points of this cone; the certificate
+LP finds the best member adapted to the observed moments.  Its dual
+is the \emph{alignment LP}: the largest product moment attainable by
+redistributing the degree field subject to the observed moments ---
+so a bound is literally a worst-case alignment, and the certificate
+is its proof.
+
+This single object reorganizes the design space:
+
+\begin{itemize}[leftmargin=10pt,itemsep=1pt]
+\item \emph{A hierarchy, not a statistic.}  Observing the moments
+  $\{\alpha : |\alpha|_1\le k\}$ defines a monotone Lasserre-style
+  hierarchy~\cite{lasserre2001} over the field: level 1 is the
+  univariate $\ell_p$ statistics of LpBound; level 2 adds exact pair
+  join counts $|R_i\Join R_j| = \mu_{e_i+e_j}$; level 3 adds triple
+  counts; level $m$ is exact, since $\mu_{\mathbf{1}}$ \emph{is} the
+  product moment.
+\item \emph{Exactness criteria.}  We characterize when a level
+  collapses to the truth: on star queries, always at order $m$, and
+  at order $m{-}1$ under a \emph{key-collapse} condition (one atom is
+  a key on the separator and covers the others' supports) --- both
+  verified empirically on real data.
+\item \emph{A computable gain predictor.}  The H\"older gap
+  $\log\frac{\min\text{-conjugate}\prod\|d_i\|}{\langle d_i,d_j\rangle}$
+  measures what the level-2 moment buys over level 1 per pair ---
+  turning statistic selection into a principled problem.
+\item \emph{A symmetric lower-bound wing.}  The same moment LP at its
+  minimum is a provable \emph{lower} bound (cf.\
+  xBound~\cite{stoian2026xbound}); we show where the polynomial cone
+  fails there and identify the correct (hinge) basis.
+\end{itemize}
+
+\vspace{1mm}
+\noindent\textbf{Instantiation and results.}
+Practically, we instantiate the hierarchy inside the entropic LP:
+each exact $k$-way join count yields a support constraint
+$h(\cup_{i\in S}A_i) \le \log|\Join_{i\in S} R_i|$ --- the strongest
+constraint obtainable from one scalar --- whose soundness is a
+two-line support argument (no new inequality family is needed,
+unlike~\cite{mayer2026corrbound}).  A reduced LP keeps the method
+computable on queries with up to $23$ attributes, and LP duality
+emits a machine-checkable proof certificate for every bound.
+
+On the LpBound evaluation suite (JOB-light/JOB-join/JOB-range on
+IMDB~\cite{leis2015howgood,leis2018query}, STATS on
+StackOverflow~\cite{han2021cardinality}, DBLP dense subgraph
+patterns), all with zero violations:
+pair moments alone reach geomean q-error \textbf{4.97} (vs.\ 16.14)
+on JOB-light, \textbf{5.05} (vs.\ 10.07) on JOB-join, and
+\textbf{7.30} (vs.\ 111.0) on JOB-range; on STATS the pair arm
+reaches 88.5 (vs.\ 175.3) and triples collapse it further to
+\textbf{8.28} --- a $21\times$ geomean improvement, with 34\% of
+queries estimated \emph{exactly}.  On DBLP the method provably ties
+the baseline --- a predicted negative control where degree sequences
+already determine the alignment.  The certificate LP reproduces the
+entropy LP query-by-query on all 69 star queries of STATS
+($\le$3\% geomean divergence), confirming that the two formulations
+are views of one object.
+
+\vspace{1mm}
+\noindent\textbf{Contributions.}
+\begin{itemize}[leftmargin=10pt,itemsep=1pt]
+\item \textbf{Theory}: a self-contained formulation of join-size
+  bounds as a moment problem on the degree field, with bounds as
+  polynomial certificates and a dual alignment LP (\S\ref{sec:theory});
+  a Lasserre-style hierarchy with exactness criteria (key-collapse
+  lemma); and a lower-bound wing with its basis limitation.
+\item \textbf{Method}: pair/triple join-count statistics as support
+  constraints in the entropic LP, a reduced LP for scalability to
+  23-attribute queries, and dual proof certificates
+  (\S\ref{sec:method}).
+\item \textbf{Evaluation}: the full LpBound suite with zero
+  violations and up to $21\times$ geomean improvement, plus a
+  certificate-vs-entropy cross-validation on 69 real star queries
+  (\S\ref{sec:exp}).
+\end{itemize}

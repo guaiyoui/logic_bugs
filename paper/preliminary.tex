@@ -1,0 +1,93 @@
+\section{Preliminaries}
+\label{sec:Preliminary}
+
+\begin{table}[t]
+\centering \small
+\caption{Symbols and Descriptions}
+\label{tab:symbol}
+\begin{tabular}{|p{2.1cm}|p{5.7cm}|}
+\hline
+\cellcolor{lightgray}\textbf{Notation} & \cellcolor{lightgray}\textbf{Description} \\ \hline
+$Q$, $R_i$, $A_i$ & conjunctive query, $i$-th atom, its attribute set \\ \hline
+$V$, $n$ & all attributes of $Q$, $n = |V|$ \\ \hline
+$\deg_R(V|U)$ & degree sequence: multiplicities of $V$-values over each $U$-value of $R$ \\ \hline
+$\|d\|_p$ & $\ell_p$-norm $(\sum_x d_x^p)^{1/p}$ \\ \hline
+$h(U)$ & joint entropy of attributes $U$ in a distribution \\ \hline
+$d(x)$, $\mathcal{D}$ & degree vector of key $x$, and the degree field \\ \hline
+$\mu_\alpha$ & observed moment $\sum_x d(x)^\alpha$ \\ \hline
+$\Omega$ & worst-case dominance domain $\prod_i \mathrm{supp}(\deg_i)$ \\ \hline
+$\mathcal{A}$ & moment set $\{\alpha\}$ that is observed \\ \hline
+$UB(\mathcal{A})$, $LB(\mathcal{A})$ & certificate bound under moments $\mathcal{A}$ \\ \hline
+\end{tabular}
+\end{table}
+
+\subsection{Problem Statement}
+
+A \emph{conjunctive query} (CQ) has the form
+\begin{equation}
+Q(V) \;=\; R_1(A_1) \Join R_2(A_2) \Join \cdots \Join R_m(A_m),
+\label{eq:cq}
+\end{equation}
+where each atom $R_i$ is a relation whose schema is $A_i \subseteq V$
+and $\bigcup_i A_i = V$; selection predicates on individual atoms are
+folded into the (filtered) relations.  We write $|Q|$ for the output
+size under bag semantics (SQL \texttt{COUNT(*)}).
+
+\begin{definition}[Pessimistic Cardinality Estimation~\cite{cai2019pessimistic,zhang2025lpbound}]
+\label{def:pce}
+Given a family of statistics $\mathcal{S}$ computable on the base
+relations, a \emph{pessimistic bound} is a function $B(Q,\mathcal{S})$
+such that $B \ge |Q(D)|$ for \emph{every} database instance $D$
+consistent with $\mathcal{S}$ --- not only for the observed one.
+The quality measure is the q-error $\mathrm{qerr} = B/|Q| \ge 1$.
+\end{definition}
+
+The requirement that $B$ hold on \emph{all} instances consistent with
+the statistics is what distinguishes a bound from an estimate: a bound
+cannot silently under-count on an adversarially permuted database.
+
+\subsection{Degree Sequences and the Entropic LP}
+
+For a relation $R$ and disjoint attribute sets $U, V \subseteq
+\mathrm{attrs}(R)$, the \emph{degree sequence} $\deg_R(V\,|\,U)$ is the
+multiset $\{|\sigma_{U=u}(R).\!V|\}_u$ of fiber cardinalities; for
+$U=\emptyset$ it is the multiset of multiplicities of $V$-values in
+$R$.  Its $\ell_p$-norm aggregates the sequence into a scalar.
+
+The entropic framework~\cite{atserias2013size,abokhamis2024lp}
+associates to $Q$ the uniform distribution on its output; its entropy
+vector satisfies $h(V) = \log|Q|$, and $h$ obeys the \emph{Shannon
+inequalities}: monotonicity $h(U) \le h(U')$ for $U \subseteq U'$ and
+submodularity $h(U_1\cup U_2) + h(U_1\cap U_2) \le h(U_1) + h(U_2)$.
+Each statistic contributes a linear constraint on $h$; the AGM bound
+uses only support constraints $h(A_i) \le \log|R_i|$.
+
+\textbf{LpBound}~\cite{abokhamis2024lp,zhang2025lpbound} adds, for
+every atom $R$, every disjoint $U,V$, and every $p \in \{1,\dots,10,
+\infty\}$, the \emph{$q$-inequality}
+\begin{equation}
+\tfrac{1}{p}\, h(U) + h(V\,|\,U) \;\le\; \log_2 \|\deg_R(V\,|\,U)\|_p ,
+\label{eq:qineq}
+\end{equation}
+obtained by one application of H\"older's inequality.  The estimate is
+$2^{\max h(V_0)}$ over the LP with all elementary Shannon inequalities
+and all such statistic constraints ($V_0$ = group-by attributes;
+$V_0{=}V$ for \texttt{COUNT(*)}).  The LP has $2^n$ entropic
+variables.
+
+\subsection{Where Tightness Is Lost}
+
+Inequality~\eqref{eq:qineq} is already tight \emph{for a single atom}
+on adversarial instances.  The gap appears \emph{between} atoms:
+combining two $q$-inequalities with submodularity over the shared
+attributes $X = A_i \cap A_j$ yields (proved in \S\ref{sec:holder})
+\begin{equation}
+h(A_i \cup A_j) \;\le\; \log \big( \|\deg_i(X)\|_p \cdot \|\deg_j(X)\|_q \big),
+\quad \tfrac1p+\tfrac1q=1 ,
+\label{eq:holderpair}
+\end{equation}
+i.e., the entropic LP implicitly bounds each pairwise join by a
+H\"older relaxation of the inner product
+$\langle \deg_i, \deg_j \rangle$.  H\"older is tight iff the two
+sequences are power-law aligned --- exactly the information the norms
+discard.  This observation drives everything that follows.

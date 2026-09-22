@@ -1,0 +1,66 @@
+\section{Related Work}
+\label{sec:related}
+
+\textbf{Worst-case join size bounds.}
+The AGM bound~\cite{atserias2013size,atserias2008agm} introduced the
+entropy-counting argument (Shearer's lemma): relation sizes alone give
+$|Q| \le \prod_i |R_i|^{w_i}$ over a fractional edge cover.
+Worst-case-optimal join algorithms --- NPRR~\cite{ngo2012worst},
+Generic Join~\cite{ngo2014skew}, Leapfrog
+Triejoin~\cite{veldhuizen2014leapfrog}, Free
+Join~\cite{wang2023freejoin} --- attain this bound instance-by-instance.
+Degree constraints and PANDA's proof-sequence
+algorithm~\cite{abokhamis2017panda} add maximum-degree information and
+close the integrality gap on cyclic queries.  Our degree field is the
+object these works implicitly bound; we make it explicit and
+parameterize bounds by which of its moments are observed.
+
+\textbf{Pessimistic cardinality estimation.}
+Cai et al.~\cite{cai2019pessimistic} initiated PCE with size plus
+max-degree statistics.  The Degree Sequence
+Bound~\cite{deeds2023degree} shows the full sorted degree sequence is
+\emph{tight} on Berge-acyclic queries; SafeBound~\cite{deeds2023safebound}
+compresses it to segments for practicality.  LpBound~\cite{abokhamis2024lp,
+zhang2025lpbound} replaces the sequence by its $\ell_p$-norms inside a
+polymatroid LP.  All are univariate in our sense: they bound
+\emph{alignment-free} quantities.  \framework{} is a strict extension:
+level~1 coincides with LpBound's statistics, and each level $k\ge2$
+adds exact $k$-way join counts.
+
+\textbf{Correlation statistics.}
+CorrBound~\cite{mayer2026corrbound} is closest: it observes
+generalized inner products $\langle a,b\rangle$ of degree vectors and
+derives a new information-inequality family, storing sketches and
+low-rank factors.  We differ in what is stored (one exact scalar per
+connected subset vs.\ sketched vectors), in constraint shape (a direct
+support bound $h(A_i\cup A_j) \le \log|R_i\Join R_j|$ vs.\ a new
+inequality family), and in verification (exactness means no sketch
+error can violate the bound).  Partition
+constraints~\cite{deeds2025partition} refine within-relation degree
+information by splitting relations; ours is the cross-relation
+counterpart.
+
+\textbf{Lower bounds and soundness.}
+xBound~\cite{stoian2026xbound} argues for cardinality \emph{lower}
+bounds and derives them from reverse inner-product inequalities.  Our
+alignment LP gives the lower wing of the same object for free
+(\S\ref{sec:lbwing}); identifying its hinge basis as
+inclusion--exclusion moments is new.  Provably-correct bounds also
+serve as oracle inputs for estimator
+validation~\cite{stoian2026outofbounds}.
+
+\textbf{Classical CE.}
+Traditional estimators --- histograms, sampling, independence
+assumptions --- are unbiased-point-estimate based and notoriously
+fragile on joins~\cite{leis2015howgood,leis2018query}; learned
+estimators~\cite{han2021cardinality} improve averages but offer no
+guarantee.  Pessimistic bounds are complementary: they cap worst-case
+error rather than minimize average error.
+
+\textbf{Moment problems.}
+Our certificate LP is a truncated generalized moment problem; the
+hierarchy parallels Lasserre's SDP/moment
+hierarchies~\cite{lasserre2001} in polynomial optimization, with the
+combinatorial twist that the domain $\Omega$ is a product of
+\emph{discrete} supports and exactness is governed by key-collapse
+structure rather than rank conditions.

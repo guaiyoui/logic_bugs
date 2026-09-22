@@ -1,0 +1,274 @@
+\section{Join-Size Bounds as Moment Problems}
+\label{sec:theory}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  font=\footnotesize,
+  node distance = 4mm and 5mm,
+  box/.style = {draw, rounded corners=1pt, align=center,
+                inner sep=3pt, fill=blue!4},
+  lab/.style = {font=\scriptsize\itshape, text=black!60},
+  arr/.style = {-{Stealth[length=2mm]}, thick, black!70}]
+
+\node[box] (field) {degree field $\mathcal{D}$\\[1pt]
+  $d(x_1){=}(8,9)$\; $d(x_2){=}(4,3)$\; $d(x_3){=}(2,1)$};
+\node[lab, above=1mm of field] {per-key degree vectors};
+
+\node[box, right=of field, yshift=7mm] (mom) {observed moments\\
+  $\mu_\alpha = \sum_x d(x)^\alpha$};
+\node[box, right=of field, yshift=-7mm] (omega) {worst-case domain\\
+  $\Omega = \prod_i \mathrm{supp}_i$};
+
+\node[box, right=of mom, yshift=-7mm, text width=24mm] (clp)
+  {certificate LP\\ $\min_c \sum_\alpha c_\alpha \mu_\alpha$\\
+   s.t.\ $\sum_\alpha c_\alpha d^\alpha \ge \prod_i d_i$};
+
+\node[box, right=of clp] (bound) {bound $B$\\ $+$ proof\\certificate};
+
+\node[box, below=7mm of clp, text width=30mm] (elp)
+  {entropic LP (equivalent)\\ support constraints
+   $h(\cup_{i\in S}A_i) \le \log\mu_\alpha$};
+
+\draw[arr] (field) -- (mom);
+\draw[arr] (field) -- (omega);
+\draw[arr] (mom) -- (clp);
+\draw[arr] (omega) -- (clp);
+\draw[arr] (clp) -- (bound);
+\draw[arr, dashed] (mom) |- (elp);
+\draw[arr, dashed] (elp) -- (bound);
+\end{tikzpicture}
+\caption{The \framework{} pipeline.  A join induces a degree field on
+its separator; statistics are moments of the field; a bound is either
+a polynomial certificate over the worst-case domain (top path) or a
+support constraint inside the entropic LP (bottom path) --- two views
+of the same moment problem.}
+\label{fig:pipeline}
+\end{figure}
+
+We now re-derive join-size bounds from scratch --- no entropies, no
+$h(U)$ variables --- as a moment problem over a combinatorial object
+we call the \emph{degree field}.  All prior bounds reappear as
+sections of one linear program.
+
+\subsection{The Degree Field and the Product Moment}
+
+\begin{definition}[Degree field]
+\label{def:field}
+Let $Q$ be a \emph{star query} on separator $X$, i.e., $A_i \cap A_j =
+\{X\}$ for $i\neq j$, or more generally a query decomposed at a
+separator attribute $X$.  For each key $x \in \mathrm{dom}(X)$ its
+\emph{degree vector} is
+$d(x) = \big(d_1(x),\dots,d_m(x)\big) \in \mathbf{N}^m$ with
+$d_i(x) = \big|\sigma_{X=x}(R_i)\big|$
+(the tuple multiplicity, including row multiplicity under bag
+semantics).  The multiset $\mathcal{D} = \{d(x)\}_x$ is the
+\emph{degree field} of $Q$ at $X$.
+\end{definition}
+
+\begin{proposition}[Product moment]
+\label{prop:prod}
+For a star query on $X$, $|Q| = \sum_x \prod_i d_i(x)$.  For a general
+acyclic query with join tree $\mathcal{T}$, $|Q|$ is a product of such
+sums over the separators of $\mathcal{T}$.
+\end{proposition}
+
+\begin{definition}[Observed moments]
+A \emph{statistic} is a moment
+$\mu_\alpha = \sum_x d(x)^\alpha$, $\alpha \in \mathbf{N}^m$.
+\end{definition}
+
+\noindent Familiar statistics are moments of particular orders:
+
+\begin{center}\small
+\begin{tabular}{c|c|l}
+$\alpha$ & moment $\mu_\alpha$ & known statistic \\ \hline
+$p\cdot e_i$ & $\sum_x d_i(x)^p$ & $\|\deg_i\|_p^p$ \;(all of LpBound) \\
+$e_i{+}e_j$ & $\sum_x d_i d_j$ & $|R_i \Join_X R_j|$ \;(pair count) \\
+$e_i{+}e_j{+}e_k$ & $\sum_x d_i d_j d_k$ & triple count \\
+$\mathbf{0}$ & $\sum_x 1$ & $|\mathrm{dom}(X)|$ \;(support) \\
+\end{tabular}
+\end{center}
+
+\noindent Note what this view explains immediately: univariate moments
+$\{p\,e_i\}$ are \emph{permutation-blind} within each axis --- they
+cannot see which $d_i(x)$ pairs with which $d_j(x)$.  The join size is
+a \emph{joint} moment; observing it (or any $\alpha$ with $\ge 2$
+nonzero coordinates) is precisely the fix.
+
+\subsection{The Certificate LP}
+
+Fix a moment set $\mathcal{A} \subset \mathbf{N}^m$ and let
+$\boldsymbol{\mu} = (\mu_\alpha)_{\alpha\in\mathcal{A}}$ be observed
+on the realized field.  Since scalar moments do not reveal the
+alignment of coordinates, a valid certificate must dominate the
+product on the \emph{worst-case domain}
+\begin{equation}
+\Omega \;=\; \prod_{i=1}^{m} \big( \{0\} \cup \mathrm{supp}(\deg_i)\big)
+\;\subseteq\; \mathbf{N}^m .
+\label{eq:omega}
+\end{equation}
+
+\begin{definition}[Certificate bound]
+\label{def:cert}
+\begin{align}
+UB(\mathcal{A}) &= \min_{c \ge 0}\; \sum_{\alpha\in\mathcal{A}} c_\alpha \mu_\alpha
+\quad\text{s.t.}\quad \sum_\alpha c_\alpha d^\alpha \ge \prod_i d_i
+\;\;\forall d\in\Omega, \label{eq:ub}\\
+LB(\mathcal{A}) &= \max_{c \ge 0}\; \sum_\alpha c_\alpha \mu_\alpha
+\quad\text{s.t.}\quad \sum_\alpha c_\alpha d^\alpha \le \prod_i d_i
+\;\;\forall d\in\Omega. \label{eq:lb}
+\end{align}
+\end{definition}
+
+\noindent An upper bound is thus \emph{literally} a nonnegativity
+certificate for $\sum_\alpha c_\alpha d^\alpha - \prod_i d_i$ on
+$\Omega$: classical inequalities --- AM--GM ($abc \le
+\frac{a^3+b^3+c^3}{3}$), Young, H\"older --- are the closed-form
+members of this cone; the LP selects the best one \emph{adapted to
+the observed $\boldsymbol{\mu}$}.
+
+\begin{theorem}[Duality: bounds are extremal alignments]
+\label{thm:dual}
+The dual of~\eqref{eq:ub} is the \emph{moment LP}
+\[
+UB(\mathcal{A}) = \max_{\nu \ge 0 \text{ on } \Omega}\; \sum_y \nu(y)\prod_i y_i
+\;\;\text{s.t.}\;\; \sum_y \nu(y)\, y^\alpha = \mu_\alpha \;\forall\alpha ,
+\]
+i.e., the bound equals the largest product moment over all weightings
+(alignments) of $\Omega$ consistent with the observed moments; strong
+duality holds since the primal is feasible with finite optimum.
+Symmetrically, $LB(\mathcal{A})$ is the \emph{best}-case alignment.
+\end{theorem}
+
+\noindent This is the semantic reading of a bound: it answers ``how
+large can the join be under the worst alignment of degrees consistent
+with the data we measured?''  The certificate $c$ is the dual
+proof of that answer.
+
+\begin{example}[A three-key star]
+\label{ex:three}
+Let $Q = R(X,Y) \Join_X S(X,Z)$ on domain $\{x_1,x_2,x_3\}$ with
+degree field $d(x_1) = (8,9)$, $d(x_2) = (4,3)$, $d(x_3) = (2,1)$;
+hence $|Q| = 72 + 12 + 2 = 86$.  Univariate moments are
+$\mu_{(2,0)} = 84$, $\mu_{(0,2)} = 91$, and
+$\Omega = \{8,4,2\}\times\{9,3,1\}$.  Minimizing
+$84\,c_{(2,0)} + 91\,c_{(0,2)}$ subject to
+$c_{(2,0)}a^2 + c_{(0,2)}b^2 \ge ab$ on the nine grid points gives
+the Cauchy certificate $(a^2\,t + b^2/t)/2$ at
+$t^\star = \sqrt{91/84}$, i.e.\ $UB = \sqrt{84\cdot91} = 87.45$
+--- the conjugate H\"older bound.  Now permute the second coordinate
+to $(9,3,1) \mapsto (1,3,9)$: \emph{every} univariate moment is
+unchanged, so the bound stays $87.45$ while the true join drops to
+$8{+}12{+}18 = 38$.  Adding the level-2 moment
+$\mu_{(1,1)} = \langle d_1,d_2\rangle$ separates the two instances:
+$c_{(1,1)} = 1$ is a certificate on $\Omega$, giving $UB = \mu_{(1,1)}
+= |Q|$ exactly in both cases.
+\end{example}
+
+\subsection{The H\"older Section}
+\label{sec:holder}
+
+Two facts locate the classical bounds inside the framework.
+
+\begin{proposition}[Univariate moments $=$ H\"older, up to the exponent lattice]
+\label{prop:holder}
+For $\mathcal{A} = \{p\,e_i : p \in P\}$ the certificate LP plays the
+role of the conjugate-H\"older bound
+$\min_{\sum_i 1/p_i = 1} \prod_i \|\deg_i\|_{p_i}$, with two
+differences: (i) the LP's certificates correspond to conjugates
+restricted to the lattice $P$ --- a closed-form scan over
+\emph{continuous} conjugates can be tighter when the optimum is
+non-integral; (ii) dominance is required only on realized degree
+values, not all of $\mathbf{R}^m$ --- so the LP is often strictly
+tighter than any closed-form point.
+\end{proposition}
+
+\begin{proposition}[The entropy LP implies H\"older on pairs]
+\label{prop:implied}
+In the entropic LP with atom-wise $q$-inequalities~\eqref{eq:qineq},
+every connected pair $i,j$ satisfies~\eqref{eq:holderpair}.
+\end{proposition}
+
+\begin{proof}
+Write $X = A_i\cap A_j$, $U_i = A_i \setminus X$, $U_j = A_j\setminus
+X$.  The $q$-inequalities give
+$h(X,U_i) \le (1-\frac1p)h(X) + \log\|\deg_i(U_i|X)\|_p$-style bounds
+and symmetrically for $j$ with conjugate $q$; elementary
+submodularity on the shared separator gives
+$h(A_i\cup A_j) \le h(A_i) + h(A_j) - h(X)$.  Summing cancels the
+$h(X)$ coefficients since $(1-\tfrac1p)+(1-\tfrac1q)-1 = 0$, leaving
+$\log\|\deg_i\|_p + \log\|\deg_j\|_q$.
+\end{proof}
+
+\noindent In words: \emph{the entropic LP's implied bound on each pair
+is already the H\"older relaxation of the pair join count}; adding
+the exact pair moment pins that relaxation to
+$\langle \deg_i,\deg_j\rangle$.  The per-pair quantity
+\begin{equation}
+\mathrm{gap}_{ij} \;=\; \log \frac{\min_{\text{conj.}}\|\deg_i\|_p\|\deg_j\|_q}
+{\langle \deg_i, \deg_j \rangle}
+\label{eq:gap}
+\end{equation}
+is therefore a \emph{computable} predictor of what the level-2 moment
+buys over level~1 --- the basis of statistic selection under a
+budget.
+
+\subsection{The Hierarchy and Exactness}
+\label{sec:hier}
+
+For $\mathcal{A}_k = \{\alpha : |\alpha|_1 \le k\}$ the bounds are
+monotone, $UB(1) \ge UB(2) \ge \cdots$ --- a Lasserre-style moment
+hierarchy~\cite{lasserre2001} over the field.
+
+\begin{proposition}[Top level is exact]
+\label{prop:exact}
+If $\mathbf{1} = (1,\dots,1) \in \mathcal{A}$ then
+$UB(\mathcal{A}) = |Q|$ on star queries, since $\mu_{\mathbf{1}}$
+\emph{is} the product moment.  Hence $m$-atom stars need the $m$-th
+moment; on STATS, all $m{=}3$ stars are exact at level~3.
+\end{proposition}
+
+Support information in $\Omega$ tightens this further:
+
+\begin{lemma}[Key collapse]
+\label{lem:collapse}
+If $\mathrm{supp}(\deg_i) \subseteq \{0,1\}$ (a uniqueness constraint
+on the separator), then $\alpha = \mathbf{1} - e_i$ is a feasible
+monomial certificate and
+$UB \le \mu_{\mathbf{1}-e_i} = |Q| +
+\sum_{x\in(\cap_{j\ne i}\mathrm{supp}_j)\setminus \mathrm{supp}_i}
+\prod_{j\ne i} d_j(x)$.  Exactness at level $m{-}1$ therefore needs
+both $d_i \equiv 1$ \emph{and} $\mathrm{supp}_i \supseteq
+\cap_{j\ne i}\mathrm{supp}_j$.  On STATS $m{=}4$ stars, all six
+exactly-estimated queries carry a $\max\deg{=}1$ atom; on the single
+query with a collapsed-but-not-covering atom the bound overshoots by
+exactly the predicted uncovered mass.
+\end{lemma}
+
+\subsection{The Lower-Bound Wing}
+\label{sec:lbwing}
+
+The framework is symmetric: $LB(\mathcal{A})$ of~\eqref{eq:lb} is the
+best-case alignment.  Here the polynomial cone honestly fails: on
+stars with $m\ge 3$ the best monomial certificate under $\prod d_i$ is
+$0$, because the inclusion--exclusion term
+$\max(0,\sum_i d_i - (m{-}1))$ is piecewise-linear, not polynomial.
+The matching basis is the family of \emph{hinge functions} of the
+form $d \mapsto \max(0,\langle w,d\rangle - t)$, whose field
+expectations are the
+inclusion--exclusion moments; bounds remain one object --- extremal
+moments over alignments --- with certificates as conic combinations
+of a chosen basis.
+
+\subsection{Scalability: Small LPs and Separation}
+\label{sec:sep}
+
+The certificate LP has $|\mathcal{A}|$ variables and $|\Omega|$ rows;
+$\Omega$ is exponential only in $m$ (atoms on the separator), not in
+the $n$ attributes of the query --- the $2^n$ blow-up of the entropic
+LP disappears.  When $|\Omega| = \prod_i |\mathrm{supp}_i|$ is large
+we solve~\eqref{eq:ub} by \emph{separation} (cutting planes): solve on
+a seed domain, query an oracle for the most-violated grid point, add
+it, repeat.  Convergence returns a certificate dominating the
+\emph{entire} product --- soundness is proved, not sampled.
