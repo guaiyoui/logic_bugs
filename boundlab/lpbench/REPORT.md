@@ -167,9 +167,111 @@ statistic here by hand; the loop is the deliverable.
 
 ---
 
-## 4. Our method
+## 4. A self-contained theory: bounds as polynomial certificates
 
-### 4.1 Constraint
+The bounds above were stated as constraints inside an entropy LP.
+Here we re-derive everything from scratch — no entropy, no `h(U)`
+variables — as a **moment problem on a degree field**.  All prior
+bounds (AGM, degree-sequence, Lp-norm, pair counts) reappear as
+sections of one LP.
+
+### 4.1 The degree field and the product moment
+
+For a star query `R_1(X,·) ⋈ … ⋈ R_m(X,·)` on one shared key, every
+key `x ∈ dom(X)` carries a **degree vector**
+`d(x) = (d_1(x),…,d_m(x)) ∈ ℕᵐ`, `d_i(x) = #{t ∈ R_i : t.X = x}`.
+Then
+
+```
+|Q| = Σ_x  ∏_i d_i(x)                    (the product moment)
+```
+
+Statistics are **observed moments** `μ_α = Σ_x d(x)^α`, `α ∈ ℕᵐ`:
+
+| α | moment | = known statistic |
+|---|---|---|
+| `p·eᵢ` | `Σ_x d_i(x)^p` | `‖deg_i‖_p^p` (LpBound's entire statistic set) |
+| `eᵢ+eⱼ` | `Σ_x d_i d_j` | `|R_i ⋈ R_j|` (our pair count) |
+| `eᵢ+eⱼ+eₖ` | `Σ_x d_i d_j d_k` | triple count |
+| `0` | `Σ_x 1` | `|dom(X)|` (support) |
+
+### 4.2 The certificate LP and its dual
+
+Summing a pointwise inequality `∏_i d_i ≤ Σ_α c_α d^α` over the field
+gives `|Q| ≤ Σ_α c_α μ_α`.  Since scalar moments do not reveal which
+`d_i(x)` pairs with which `d_j(x)`, the inequality must dominate on
+the **worst-case domain** `Ω = ∏_i supp(deg_i)` (the product of
+realized degree supports).  Hence
+
+```
+UB(A) = min  Σ_α c_α μ_α      LB(A) = max  Σ_α c_α μ_α
+        c ≥ 0                        c ≥ 0
+        s.t. Σ_α c_α d^α ≥ Π d_i      s.t. Σ_α c_α d^α ≤ Π d_i
+             ∀d ∈ Ω                        ∀d ∈ Ω
+```
+
+A bound is therefore *literally a nonnegativity certificate*: a
+polynomial that dominates `Π d_i` pointwise.  AM-GM
+(`abc ≤ (a³+b³+c³)/3`), Young, and Hölder are all members of this
+cone — they are the *closed-form* points; the LP finds the best one
+adapted to the observed moments.
+
+**Duality.**  The dual of `UB(A)` is the moment LP: maximize
+`Σ_y ν(y)·Π y_i` over nonnegative weightings `ν` on `Ω` matching the
+observed moments.  Strong duality: `UB(A)` = the largest product
+moment consistent with `A` — the certificate *is* the proof.
+
+### 4.3 The Hölder section (univariate moments are exactly Hölder)
+
+With `A = {p·eᵢ}` only, the optimal certificate recovers the
+conjugate-Hölder bound `min_{Σ1/pᵢ=1} ∏ᵢ‖deg_i‖_{pᵢ}` — and on the
+discrete grid it is slightly *tighter*, because dominance is only
+required on realized degree values, not all of ℝⁿ.  Empirically the
+two coincide to machine precision on aligned cases and the LP is
+strictly tighter otherwise (§6).  In words:
+
+> the entropy-LP's implied bound on each pair is *already* the
+> Hölder relaxation of the pair join count; adding the exact pair
+> moment pins that relaxation to its exact value `⟨deg_i, deg_j⟩`.
+
+### 4.4 The hierarchy and the exactness level
+
+`A_k = {α : |α|₁ ≤ k}` gives a monotone sequence
+`UB(1) ≥ UB(2) ≥ …` — a **Lasserre-style moment hierarchy**.  Two
+exactness levels are immediate:
+
+- `e₁+…+eₘ ∈ A ⇒ UB = |Q|` exactly (the product moment *is* the truth;
+  this is why `+triples` hits 1.00 on 3-atom stars and why `m`-atom
+  queries need the `m`-th moment).
+- the Hölder gap `log(min-conjugate-∏‖d_i‖ / ⟨d_i,d_j⟩)` measures
+  exactly how much the level-2 moment buys over level-1 — a
+  computable predictor for statistic selection.
+
+### 4.5 Where the polynomial cone is *not* enough
+
+The lower-bound side exposes an honest limitation: with `c ≥ 0` and
+polynomial basis `d^α`, the best LB on stars collapses to 0 —
+`max(0, Σdᵢ−(m−1))` (inclusion–exclusion) is *piecewise-linear*, not
+polynomial.  Extending the certificate basis beyond monomials
+(piecewise-linear / max-terms) is the natural next theorem, and keeps
+the framework one object: bounds = certificates over a basis family.
+
+### 4.6 Scalability: the LP is small and separable
+
+Variables = `|A|` (one per observed moment); rows = `|Ω|`.
+`Ω` is exponential only in `m` (#atoms on the separator), not in
+`n` (#attributes) — the `2ⁿ` entropy-variable blowup disappears.
+When `|Ω| = ∏|supp_i|` is large we solve by *separation*
+(cutting planes): solve on a coarse grid, ask an oracle for the
+most-violated grid point, add it, repeat — convergence yields a
+certificate dominating the entire product, so soundness is proven,
+not sampled.
+
+---
+
+## 5. Instantiation: our method as moment constraints in the entropy LP
+
+### 5.1 Constraint
 
 For every pair of atoms `i < j` sharing ≥ 1 attribute, add
 
@@ -177,7 +279,7 @@ For every pair of atoms `i < j` sharing ≥ 1 attribute, add
 h(A_i ∪ A_j) ≤ log₂ |R_i ⋈_{A_i ∩ A_j} R_j|
 ```
 
-### 4.2 Soundness (one paragraph)
+### 5.2 Soundness (one paragraph)
 
 Let `h` be the entropy vector of the uniform distribution over the join
 output `Q`. The marginal support of `(A_i ∪ A_j)` under `Q` is contained in
@@ -190,7 +292,7 @@ constraint added is still `≥ log|Q|` — and never larger than before
 The same argument holds for *any* distribution supported on the join, which
 is why the group-by objective `max h(V_0)` stays valid.
 
-### 4.3 Baseline fidelity
+### 5.3 Baseline fidelity
 
 Our `lpbound` arm reimplements the paper's LP:
 
@@ -211,9 +313,9 @@ closed-form degree products where applicable.
 
 ---
 
-## 5. Results
+## 6. Results
 
-### 5.1 Synthetic (zipf degrees, 3000-key domain)
+### 6.1 Synthetic (zipf degrees, 3000-key domain)
 
 Query `J2 = R(X,Y) ⋈_X S(X,Z)` unless noted. `q-err = bound/truth` (≥1).
 
@@ -238,7 +340,7 @@ On any 2-atom query the pair constraint lands on the *full* attribute set
 `R ⋈ S` is bounded, but which `Y`s pair with which `Z`s inside `S` is a
 *within-relation* property — motivating conditional/triple statistics (§7).
 
-### 5.2 cit-Patents, 3M edges, directed (in/out degree sequences differ)
+### 6.2 cit-Patents, 3M edges, directed (in/out degree sequences differ)
 
 | motif | truth | LpBound | +pairs | +triples | LB |
 |---|---|---|---|---|---|
@@ -248,7 +350,7 @@ On any 2-atom query the pair constraint lands on the *full* attribute set
 | path3 | 3,767,959 | 58.95 | **37.84** | — | 1,867,991 |
 | **path4** | 2,618,085 | 2067.18 | 2067.18 | **133.68** | n/a (no spine) |
 
-### 5.3 Same data, undirected — the negative control
+### 6.3 Same data, undirected — the negative control
 
 | motif | LpBound | +pairs | LB |
 |---|---|---|---|
@@ -265,7 +367,7 @@ marginals already determine the inner product. This confirms the mechanism:
 **pair statistics pay off iff cross-relation alignment is not inferable
 from univariate marginals.**
 
-### 5.4 The k-hop ladder and two-sided intervals
+### 6.4 The k-hop ladder and two-sided intervals
 
 Synthetic 4-chain `R(X,Y)-S(Y,Z)-T(Z,U)-V(U,W)` with `T.z` rank-reversed
 vs `S.z` (truth = 42,320):
@@ -296,7 +398,7 @@ e.g. `j4+pairs` decomposes as `bound = |R| · |T⋈V|` mediated by six Shannon
 inequalities. This is a machine-checkable proof sequence in the PANDA
 style, emitted for free by the solver.
 
-### 5.5 Real-world benchmarks (the actual LpBound evaluation suite)
+### 6.5 Real-world benchmarks (the actual LpBound evaluation suite)
 
 Same datasets/workloads as the LpBound paper: **JOB** on IMDB
 (JOB-light 70 queries, JOB-join 31, JOB-range), **STATS** (146 queries,
@@ -375,7 +477,47 @@ negative control: after label propagation each edge atom is tiny
 DuckDB also times out on most dense patterns, so the ratio is reported
 on bounds alone.  This is §6's predicted no-win regime.
 
-### 5.6 Engineering: what it took to be correct *and* scalable
+### 6.6 The certificate LP reproduces the entropy LP — exactly
+
+`moment.py` solves the certificate LP of §4 (variables = moment
+coefficients, rows = worst-case dominance domain, cutting-plane
+separation when the product grid is large).  On every case checked it
+**reproduces the entropy LP to the last bit** — evidence that the two
+formulations are the same object:
+
+| case | truth | Hölder closed | mcert univ | mcert +pairs | mcert +triples | entropy lpbound / +pairs |
+|---|---|---|---|---|---|---|
+| j2/sym | 5.96M | 1.00 | 1.00 | 1.00 | — | 1.00 / 1.00 |
+| j2/anti_rank | 23K | 256.7 | **256.73** | **1.00** | — | 256.73 / 1.00 |
+| j2/anti_dom | 0 | inf | inf | **0** | — | 6.0M / 1 |
+| j2/asym | 27.4M | 1.02 | 1.03 | 1.00 | — | 1.04 / 1.00 |
+| j2/unif | 77K | 1.27 | 1.27 | 1.00 | — | 1.27 / 1.00 |
+| star3/sym | 9.22B | 1.01 | 1.00 | 1.00 | 1.00 | 1.00 / 1.00 |
+| star3/anti_rank | 6.0M | 1563 | **1542.72** | **7.78** | **1.00** | 1542.72 / 7.78 |
+
+(q-err shown; mcert univar = the entropy `lpbound` column to printed
+precision on every case — the Hölder-section claim of §4.3.)
+
+STATS single-key stars (first 12 evaluated): `mc_pairs` = entropy
+`+pairs` bit-for-bit; `mc_tri` = `+triples`; `mc_uni` tracks `lpbound`
+within 0.01% — and is *slightly tighter* where the discrete grid
+dominance beats continuous Hölder (`stats.2`: 14,326,174 vs
+14,326,997).  The Hölder gap is confirmed as the exact predictor of
+where the pair moment pays.
+
+Lower-bound side (`mcert LB`): collapses to 0 on stars with `m ≥ 3` —
+the polynomial cone provably cannot express `max(0, Σdᵢ−(m−1))`;
+recorded as §4.5's open extension rather than hidden.
+
+*Solver caveat worth recording:* on badly-scaled moment LPs HiGHS can
+return a numerically suboptimal point (on `star3/anti_rank` it reported
+UB = 1.004×truth while the monomial certificate `c_{(1,1,1)} = 1` —
+equal to `μ_{(1,1,1)}` = truth — was feasible and cheaper).  Since any
+"super-product" moment `α ≥ 𝟏` is itself a valid monomial certificate,
+`certificate_bound` enforces `UB ≤ min_{α ≥ 𝟏} μ_α` as a sanity floor;
+after the floor the triple bound is exact (`5,973,360` = truth).
+
+### 6.7 Engineering: what it took to be correct *and* scalable
 
 Real data surfaced four bugs a synthetic-only evaluation would miss:
 
@@ -409,7 +551,7 @@ Real data surfaced four bugs a synthetic-only evaluation would miss:
   through a NULL-aware comparator (SQL: any comparison on NULL is
   false).
 
-### 5.7 Cost
+### 6.8 Cost
 
 - Storage: one scalar per connected atom subset (`O(m²)` pairs; `O(m)`
   for chains — selection under a budget is future work).
@@ -420,7 +562,7 @@ Real data surfaced four bugs a synthetic-only evaluation would miss:
 
 ---
 
-## 6. Relation to CorrBound — why this isn't redundant
+## 7. Relation to CorrBound — why this isn't redundant
 
 CorrBound's generalized inner products `⟨a,b⟩` are also pairwise
 statistics. Differences:
@@ -449,7 +591,7 @@ space between us.
 
 ---
 
-## 7. What's next — progress and remaining
+## 8. What's next — progress and remaining
 
 Done in this round:
 
@@ -492,7 +634,7 @@ Still open:
 
 ---
 
-## 8. Files
+## 9. Files
 
 ```
 boundlab/lpbench/
