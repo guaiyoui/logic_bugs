@@ -83,14 +83,19 @@ def main():
         truth_mc = float((MO.product_values(Df) * mult).sum())
         uni = MO.with_support(MO.univariate_alphas(m, PS), m)
         prs = uni + MO.pair_alphas(m)
-        ub1, _, _ = MO.certificate_bound_separated(Df, mult, uni, degseqs)
-        ub2, _, _ = MO.certificate_bound_separated(Df, mult, prs, degseqs)
-        ub3 = None
-        if m >= 3:
-            tr = prs + MO.triple_alphas(m)
-            ub3, _, _ = MO.certificate_bound_separated(Df, mult, tr,
-                                                       degseqs)
-        ho = MO.holder_bound(degseqs)
+
+        def sep(alphas):
+            for attempt in range(3):
+                b, _, _ = MO.certificate_bound_separated(Df, mult,
+                                                         alphas, degseqs,
+                                                         solver_retry=attempt)
+                if b is not None:
+                    return b
+            return None
+        ub1 = sep(uni)
+        ub2 = sep(prs)
+        ub3 = sep(prs + MO.triple_alphas(m)) if m >= 3 else None
+        ho = MO.holder_bound(degseqs, ps=PS)
         r = ref.loc[name] if name in ref.index else None
         truth_db = float(r["truth"]) if r is not None and r["truth"] > 0 else np.nan
         rec = dict(q=name, m=m, K=len(Df), truth=truth_db,
@@ -104,10 +109,15 @@ def main():
         viol = "VIOL" if (not np.isnan(truth_db) and
                           min(x for x in (ub1, ub2, ub3) if x is not None)
                           < truth_db - 1) else "ok"
+        def f_(x):
+            return f"{x:,.0f}" if x is not None and not np.isnan(x) else "FAIL"
         print(f"{name}: m={m} truth={truth_db:,.0f} mc={truth_mc:,.0f} "
-              f"holder={ho:,.0f} uni={ub1:,.0f} pair={ub2:,.0f} "
-              f"tri={ub3 if ub3 else float('nan'):,.0f} [{viol}]",
+              f"holder={ho:,.0f} uni={f_(ub1)} pair={f_(ub2)} "
+              f"tri={f_(ub3)} [{viol}]",
               flush=True)
+        # crash-safe incremental dump
+        pd.DataFrame(out).to_csv("results/moment_stats.csv",
+                                 index=False)
     df = pd.DataFrame(out)
     df.to_csv("results/moment_stats.csv", index=False)
     ok = df[df["truth"] > 0]

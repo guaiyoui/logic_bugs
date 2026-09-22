@@ -221,14 +221,23 @@ adapted to the observed moments.
 observed moments.  Strong duality: `UB(A)` = the largest product
 moment consistent with `A` — the certificate *is* the proof.
 
-### 4.3 The Hölder section (univariate moments are exactly Hölder)
+### 4.3 The Hölder section (univariate moments ≈ Hölder, up to the exponent lattice)
 
-With `A = {p·eᵢ}` only, the optimal certificate recovers the
-conjugate-Hölder bound `min_{Σ1/pᵢ=1} ∏ᵢ‖deg_i‖_{pᵢ}` — and on the
-discrete grid it is slightly *tighter*, because dominance is only
-required on realized degree values, not all of ℝⁿ.  Empirically the
-two coincide to machine precision on aligned cases and the LP is
-strictly tighter otherwise (§6).  In words:
+With `A = {p·eᵢ : p ∈ P}` only, the certificate LP plays the same
+role as the conjugate-Hölder bound `min_{Σ1/pᵢ=1} ∏ᵢ‖deg_i‖_{pᵢ}`,
+but with two precise differences:
+
+- *Exponent lattice*: LP moments live at integer orders `p ∈ P`, so
+  the achievable certificates correspond to Hölder conjugates
+  restricted to `P`.  A closed-form scan over *continuous* conjugates
+  can beat the LP when the optimal exponent is non-integer — this
+  happens on 4 STATS queries (`stats.2–5`, all `m = 2`).
+- *Grid dominance*: dominance is required only on realized degree
+  values, not all of ℝᵐ — so the LP is often *strictly* tighter than
+  any closed-form Hölder point (STATS univariate geomean `58.4` vs
+  closed-form `111.4`, `uni ≤ holder` on 65/69).
+
+In words:
 
 > the entropy-LP's implied bound on each pair is *already* the
 > Hölder relaxation of the pair join count; adding the exact pair
@@ -241,20 +250,49 @@ strictly tighter otherwise (§6).  In words:
 exactness levels are immediate:
 
 - `e₁+…+eₘ ∈ A ⇒ UB = |Q|` exactly (the product moment *is* the truth;
-  this is why `+triples` hits 1.00 on 3-atom stars and why `m`-atom
-  queries need the `m`-th moment).
+  this is why `+triples` hits 1.00 on every 3-atom star — 25/25 exact
+  on STATS — and why `m`-atom queries need the `m`-th moment).
+- **Key-collapse lemma** (support information tightens the domain):
+  if `supp(deg_i) ⊆ {0,1}` — a uniqueness/FK constraint on the
+  separator — then on `Ω` the factor `d_i ∈ {0,1}` contributes only
+  masking, so `α = 𝟏−eᵢ` is already a feasible monomial certificate,
+  giving `UB ≤ μ_{𝟏−eᵢ} = |Q| + Σ_{x ∈ (∩_{j≠i}supp_j)∖supp_i}
+  Π_{j≠i}d_j(x)`.  Exactness therefore needs *both* `d_i ≡ 1` **and**
+  `supp_i ⊇ ∩_{j≠i} supp_j` (the key set covers the others'
+  intersection).  Verified on STATS `m = 4` stars: **all six** exact
+  cases (`stats.30/38/95/96/107/123`) carry a `maxdeg = 1` atom —
+  the condition is both sufficient and, on this workload,
+  necessary; `stats.25` has `d_i ≡ 1` but 30 keys fall outside its
+  support — the bound overshoots by exactly their product mass
+  (`176,221` vs `176,191`).
 - the Hölder gap `log(min-conjugate-∏‖d_i‖ / ⟨d_i,d_j⟩)` measures
   exactly how much the level-2 moment buys over level-1 — a
   computable predictor for statistic selection.
 
-### 4.5 Where the polynomial cone is *not* enough
+### 4.5 The lower-bound wing: the *other* moment LP
 
-The lower-bound side exposes an honest limitation: with `c ≥ 0` and
-polynomial basis `d^α`, the best LB on stars collapses to 0 —
-`max(0, Σdᵢ−(m−1))` (inclusion–exclusion) is *piecewise-linear*, not
-polynomial.  Extending the certificate basis beyond monomials
-(piecewise-linear / max-terms) is the natural next theorem, and keeps
-the framework one object: bounds = certificates over a basis family.
+The framework is symmetric — `UB(A)` upper-bounds the product moment
+over all alignments consistent with `A`; the matching lower bound is
+
+```
+LB(A) = min  Σ_y ν(y)·Π yᵢ      over ν ≥ 0 on Ω,
+        s.t. Σ_y ν(y)·y^α = μ_α  ∀α ∈ A
+```
+
+the *best*-case alignment.  Its LP dual is a max over lower
+certificates — and here the polynomial cone honestly fails: on stars
+with `m ≥ 3` the best monomial certificate under `Π dᵢ` is `0`,
+because `max(0, Σdᵢ−(m−1))` is piecewise-linear, not polynomial.
+Numerically the picture is sharp: on `j2` cases `LB(A)` under pair
+moments is trivially exact (`μ₁₁ = |Q|` is itself a constraint);
+under univariate moments it is `0` on symmetric fields but exact on
+`asym` (extreme skew pins the alignment).  The right basis extension
+is **hinge functions** `max(0, ⟨w,d⟩−t)` — their field expectations
+are exactly the inclusion–exclusion moments — which keeps everything
+one object: *bounds = extremal moments over alignments, certificates
+= conic combinations of a chosen basis*.  Computing `LB(A)` directly
+via the alignment LP, or observing hinge moments as statistics, are
+the two concrete next steps.
 
 ### 4.6 Scalability: the LP is small and separable
 
@@ -498,12 +536,40 @@ formulations are the same object:
 (q-err shown; mcert univar = the entropy `lpbound` column to printed
 precision on every case — the Hölder-section claim of §4.3.)
 
-STATS single-key stars (first 12 evaluated): `mc_pairs` = entropy
-`+pairs` bit-for-bit; `mc_tri` = `+triples`; `mc_uni` tracks `lpbound`
-within 0.01% — and is *slightly tighter* where the discrete grid
-dominance beats continuous Hölder (`stats.2`: 14,326,174 vs
-14,326,997).  The Hölder gap is confirmed as the exact predictor of
-where the pair moment pays.
+STATS single-key stars — all `m ≤ 4` single-separator star queries
+(69 queries, all with DuckDB truth):
+
+| arm | geomean | median | viol | n |
+|---|---|---|---|---|
+| Hölder closed-form | 111.4 | 40.9 | 0 | 69 |
+| **mcert univ** | **58.4** | 22.7 | 0 | 69 |
+| **mcert +pairs** | **30.6** | 11.4 | 0 | 68 |
+| **mcert +triples** | **3.73** | **1.00** | 0 | 63 |
+| entropy lpbound / +pairs / +triples | 58.9 / 29.8 / 2.87 | 22.8 / 9.9 / 1.00 | 0 | 69 |
+
+The two formulations track each other query-by-query (pair arm:
+17/68 bit-identical; triples: 15/63; geomeans within 3%), and the
+certificate LP is marginally tighter on `mc_uni` vs `lpbound`
+(58.4 < 58.9) — the grid-dominance effect.  The certificate view
+makes the *level structure* visible that the entropy LP hides:
+
+- `m = 3` stars: `mc_tri = truth` on **25/25** — `μ₁₁₁` *is* the
+  product moment (§4.4 exactness level, empirically saturated).
+- `m = 4` stars: exact exactly on the six queries carrying a
+  collapsed atom (`d_i ≡ 1`: `stats.30/38/95/96/107/123`, each
+  verified `maxdeg = 1`); the `stats.25` residual of +30 over truth
+  is exactly the uncovered support mass predicted by the
+  key-collapse lemma — `d_i ≡ 1` holds but `supp_i` misses 30 keys
+  of the others' intersection.
+- the entropy LP's triples arm is marginally tighter on the `m = 4`
+  residue (`2.87` vs `3.73` geomean) — its Shannon-constraint web
+  across subset unions captures what three scalar moments alone miss.
+
+Solver robustness: HiGHS intermittently reports numeric failure on
+degenerate grids; a perturbed-resolve retry (`solver_retry` toggles
+presolve/tolerances) recovered 3 of 4 cells (`stats.82/105` pair,
+`stats.107` triple — the latter landing exactly on truth).  One cell
+(`stats.107` pair) remains missing rather than silently looser.
 
 Lower-bound side (`mcert LB`): collapses to 0 on stars with `m ≥ 3` —
 the polynomial cone provably cannot express `max(0, Σdᵢ−(m−1))`;

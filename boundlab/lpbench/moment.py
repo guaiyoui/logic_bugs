@@ -84,7 +84,7 @@ def product_values(D):
 
 
 # ---------------------------------------------------------- certificate LP
-def product_domain(degseqs, cap=4_000_000):
+def product_domain(degseqs, cap=200_000):
     """Worst-case dominance domain: the cartesian product of per-atom
     realized degree supports (with 0 for absent keys).  Scalar moments
     do not reveal which d_i(x) pairs with which d_j(x), so a valid
@@ -101,19 +101,28 @@ def product_domain(degseqs, cap=4_000_000):
 
 
 def _min_slack(vals, c, alphas, side, block=400_000):
-    """Separation oracle: scan the full product grid (blocked over the
-    first axis) for the point minimizing the certificate slack.
+    """Separation oracle: scan the full product grid (blocked over ALL
+    axes, so a single block never exceeds `block` rows) for the point
+    minimizing the certificate slack.
     upper: slack = M(d).c - prod(d); violation iff min < 0.
     Returns (min_slack, argmin_point)."""
     m = len(vals)
-    idx = [np.arange(len(v)) for v in vals]
+    # per-axis chunk counts so prod(chunks_len) <= block
+    budgets = [1] * m
+    rem = block
+    for i in range(m):
+        budgets[i] = max(1, min(len(vals[i]), rem))
+        rem = max(1, rem // budgets[i])
+    ranges = []
+    for i in range(m):
+        edges = np.linspace(0, len(vals[i]),
+                            int(np.ceil(len(vals[i]) / budgets[i])) + 1
+                            ).astype(int)
+        ranges.append([vals[i][a:b] for a, b in zip(edges[:-1],
+                                                  edges[1:])])
     best, best_pt = np.inf, None
-    n0 = len(vals[0])
-    for lo in range(0, n0, max(1, block // int(np.prod([len(v)
-                                                       for v in vals[1:]])))):
-        hi = min(n0, lo + max(1, block //
-                              int(np.prod([len(v) for v in vals[1:]]))))
-        grids = np.meshgrid(vals[0][lo:hi], *vals[1:], indexing="ij")
+    for combo in itertools.product(*ranges):
+        grids = np.meshgrid(*combo, indexing="ij")
         dg = np.stack([g.ravel() for g in grids], axis=1)
         Md = moment_matrix(dg, alphas) @ c
         slack = Md - product_values(dg)
@@ -126,14 +135,17 @@ def _min_slack(vals, c, alphas, side, block=400_000):
 
 
 def certificate_bound_separated(D, mult, alphas, degseqs, side="upper",
-                                tol=1e-9, maxit=200):
+                                tol=1e-9, maxit=200, solver_retry=0):
     """Certificate LP over the full worst-case product domain via
     cutting planes: solve on a small domain, ask the oracle for the
     most-violated grid point, add it, repeat.  Converges with an
-    optimality proof (final certificate dominates the ENTIRE product)."""
+    optimality proof (final certificate dominates the ENTIRE product).
+    `solver_retry` > 0 perturbs the LP numerics (tolerance/presolve)
+    to work around transient HiGHS failures on degenerate LPs."""
     Om, vals = product_domain(degseqs)
     if Om is not None:                     # small enough: solve directly
-        return certificate_bound(D, mult, alphas, side, omega=Om)
+        return certificate_bound(D, mult, alphas, side, omega=Om,
+                                 retry=solver_retry)
     # seed domain: realized field + axis midpoint + axis extremes
     m = len(vals)
     seed = [np.asarray(D, dtype=np.float64)]
@@ -146,7 +158,8 @@ def certificate_bound_separated(D, mult, alphas, degseqs, side="upper",
         seed.append(ext)
     Om_cur = np.unique(np.concatenate(seed), axis=0)
     for _ in range(maxit):
-        b, c, msg = certificate_bound(D, mult, alphas, side, omega=Om_cur)
+        b, c, msg = certificate_bound(D, mult, alphas, side,
+                                      omega=Om_cur, retry=solver_retry)
         if b is None:
             return None, None, msg
         slack, pt = _min_slack(vals, c, alphas, side)
@@ -156,7 +169,8 @@ def certificate_bound_separated(D, mult, alphas, degseqs, side="upper",
     return b, c, "separation did not converge"
 
 
-def certificate_bound(D, mult, alphas, side="upper", omega=None):
+def certificate_bound(D, mult, alphas, side="upper", omega=None,
+                      retry=0):
     """Solve the certificate LP.
 
     Moments mu are computed on the realized field (D, mult); the
@@ -180,13 +194,20 @@ def certificate_bound(D, mult, alphas, side="upper", omega=None):
     # nonnegative certificates only: every classical inequality
     # (AM-GM/Young/Hoelder) lives in this cone, and free coefficients
     # invite numeric unboundedness misdetection in HiGHS.
+    from scipy.sparse import csr_matrix
     opts = {"primal_feasibility_tolerance": 1e-9,
             "dual_feasibility_tolerance": 1e-9}
+    if retry == 1:
+        opts["presolve"] = False
+    elif retry >= 2:
+        opts = {"primal_feasibility_tolerance": 1e-7,
+                "dual_feasibility_tolerance": 1e-7}
+    Asp = csr_matrix(Ms)
     if side == "upper":
-        res = linprog(mus, A_ub=-Ms, b_ub=-p, bounds=(0, None),
+        res = linprog(mus, A_ub=-Asp, b_ub=-p, bounds=(0, None),
                       method="highs", options=opts)
     else:
-        res = linprog(-mus, A_ub=Ms, b_ub=p, bounds=(0, None),
+        res = linprog(-mus, A_ub=Asp, b_ub=p, bounds=(0, None),
                       method="highs", options=opts)
     if res.status != 0:
         return None, None, res.message
@@ -232,12 +253,10 @@ def with_support(alphas, m):
 # -------------------------------------------------------- Hoelder section
 def holder_bound(degseqs, ps=None):
     """Closed form: min over conjugate exponents of prod ||deg_i||_{p_i}.
-    With p_i = m for all i this is  prod ||deg_i||_m ;  we also scan
-    simplex grids for a tighter conjugate choice."""
+    Scans a weight-simplex grid, so conjugates are *continuous*
+    (p_i = 1/w_i need not be integer) — unlike the certificate LP whose
+    moment set is an integer-exponent lattice (§4.3)."""
     m = len(degseqs)
-    norms = {p: [np.sum(d.astype(np.float64) ** p) ** (1.0 / p)
-                 for _, d in degseqs]
-             for p in (ps or range(1, 16))}
 
     def eval_exp(ws):
         out = 1.0

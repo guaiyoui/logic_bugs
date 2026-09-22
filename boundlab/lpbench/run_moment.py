@@ -47,7 +47,7 @@ def star_case(name, dbs, key="k"):
                                                    degseqs)
     lb1, _, _ = MO.certificate_bound_separated(Df, mult, pairs, degseqs,
                                                side="lower")
-    ho = MO.holder_bound(degseqs)
+    ho = MO.holder_bound(degseqs, ps=ps)
 
     def ok(b):
         return "OK" if b is None or b >= truth - 1e-6 else "*** VIOL ***"
